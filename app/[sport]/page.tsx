@@ -6,7 +6,7 @@ import SportPageClient from './SportPageClient';
 export default async function SportPage({ params }: { params: { sport: string } }) {
   const { sport } = params;
   
-  let schedule = { recent: [], upcoming: [] };
+  let schedule: { recent: any[]; upcoming: any[] } = { recent: [], upcoming: [] };
   
   if (sport === 'nba') {
     schedule = await getNBASchedule();
