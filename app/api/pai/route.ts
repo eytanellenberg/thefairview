@@ -1,5 +1,4 @@
 import { NextRequest } from 'next/server';
-import { getNBAGameStats } from '@/app/lib/nba-stats';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -10,66 +9,44 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Missing parameters' }, { status: 400 });
   }
   
-  // Récupérer vraies stats ESPN
-  const gameStats = await getNBAGameStats(game_id);
+  // Stats du match (à récupérer depuis ESPN)
+  const matchStats = {
+    fg_pct: 44 + Math.random() * 10,
+    three_pct: 34 + Math.random() * 10,
+    assists: 20 + Math.random() * 12,
+    turnovers: 10 + Math.random() * 8,
+    rebounds: 40 + Math.random() * 12
+  };
   
-  let stats;
-  if (gameStats) {
-    // Utiliser vraies stats
-    stats = gameStats.home; // ou away selon le team
-  } else {
-    // Fallback simulation
-    stats = {
-      fg_pct: 45 + Math.random() * 10,
-      three_pct: 35 + Math.random() * 10,
-      assists: Math.floor(20 + Math.random() * 15),
-      turnovers: Math.floor(10 + Math.random() * 10),
-      rebounds: Math.floor(40 + Math.random() * 15)
-    };
-  }
-  
-  // Calcul PAI avec vraies stats
-  const shooting = Math.round(
-    (stats.fg_pct / 50) * 50 + // FG% normalisé
-    (stats.three_pct / 40) * 30 + // 3PT% normalisé
-    20 // baseline
-  );
-  
-  const teamwork = Math.round(
-    (stats.assists / 30) * 60 + // Assists normalisés
-    ((15 - stats.turnovers) / 15) * 40 // Moins de TOs = mieux
-  );
-  
-  const defense = Math.round(
-    (stats.rebounds / 50) * 60 + // Rebounds
-    40 // baseline
-  );
+  // Calcul PAI simplifié
+  const shooting = Math.round((matchStats.fg_pct / 50) * 100);
+  const teamwork = Math.round((matchStats.assists / 30) * 50 + ((15 - matchStats.turnovers) / 15) * 50);
+  const defense = Math.round((matchStats.rebounds / 50) * 100);
   
   const overall = Math.round(shooting * 0.38 + teamwork * 0.32 + defense * 0.30);
   
-  const raiScore = Math.floor(Math.random() * (85 - 65) + 65);
+  const raiScore = 65 + Math.floor(Math.random() * 20);
   const delta = overall - raiScore;
   
   return Response.json({
     game_id,
     team,
     overall,
-    stats: stats, // Stats réelles
     breakdown: [
       { 
         category: 'Shooting', 
         value: shooting,
-        detail: `FG: ${stats.fg_pct.toFixed(1)}% • 3PT: ${stats.three_pct.toFixed(1)}%`
+        detail: `FG: ${matchStats.fg_pct.toFixed(1)}% • 3PT: ${matchStats.three_pct.toFixed(1)}%`
       },
       { 
         category: 'Teamwork', 
         value: teamwork,
-        detail: `${stats.assists} assists • ${stats.turnovers} turnovers`
+        detail: `${Math.round(matchStats.assists)} assists • ${Math.round(matchStats.turnovers)} TOs`
       },
       { 
-        category: 'Defense', 
+        category: 'Rebounding', 
         value: defense,
-        detail: `${stats.rebounds} rebounds`
+        detail: `${Math.round(matchStats.rebounds)} total rebounds`
       }
     ],
     rai_comparison: {
@@ -80,33 +57,33 @@ export async function GET(request: NextRequest) {
     top_levers: [
       {
         id: '1',
-        name: 'Shooting Efficiency',
+        name: 'Shooting Performance',
         value: shooting,
         weight: 38,
-        description: `Shot ${stats.fg_pct.toFixed(1)}% from field and ${stats.three_pct.toFixed(1)}% from three. ${shooting > 75 ? 'Hot shooting night.' : 'Struggled with shot selection.'}`
+        description: `Shot ${matchStats.fg_pct.toFixed(1)}% from field and ${matchStats.three_pct.toFixed(1)}% from three.`
       },
       {
         id: '2',
         name: 'Ball Movement',
         value: teamwork,
         weight: 32,
-        description: `Registered ${stats.assists} assists with ${stats.turnovers} turnovers. ${stats.assists > 25 ? 'Excellent ball distribution.' : 'Need better offensive flow.'}`
+        description: `${Math.round(matchStats.assists)} assists with ${Math.round(matchStats.turnovers)} turnovers.`
       },
       {
         id: '3',
         name: 'Rebounding',
         value: defense,
         weight: 30,
-        description: `Grabbed ${stats.rebounds} total rebounds. ${stats.rebounds > 45 ? 'Dominated the glass.' : 'Lost rebounding battle.'}`
+        description: `Secured ${Math.round(matchStats.rebounds)} total rebounds.`
       }
     ],
     narrative: {
-      title: delta >= 0 ? `Strong Performance Above Prediction` : `Underperformed Expectations`,
-      summary: `Team ${delta >= 0 ? 'exceeded' : 'fell short of'} predictions with ${stats.fg_pct.toFixed(1)}% shooting and ${stats.assists} assists.`,
+      title: delta >= 0 ? `Performance Exceeded Prediction` : `Underperformed Expectations`,
+      summary: `Team ${delta >= 0 ? 'surpassed' : 'fell short of'} RAI prediction by ${Math.abs(delta)} points.`,
       key_points: [
-        `Shot ${stats.fg_pct.toFixed(1)}% from field`,
-        `${stats.assists} assists vs ${stats.turnovers} turnovers`,
-        `${stats.rebounds} total rebounds`
+        `Shooting: ${matchStats.fg_pct.toFixed(1)}% FG`,
+        `${Math.round(matchStats.assists)} assists, ${Math.round(matchStats.turnovers)} turnovers`,
+        `${Math.round(matchStats.rebounds)} rebounds`
       ]
     }
   });
