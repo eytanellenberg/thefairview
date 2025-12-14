@@ -1,47 +1,30 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/app/lib/supabase';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
 export async function POST(request: Request) {
   const body = await request.text();
-  const sig = request.headers.get('stripe-signature')!;
+  const sig = request.headers.get('stripe-signature');
+
+  if (!sig) {
+    return NextResponse.json({ error: 'No signature' }, { status: 400 });
+  }
 
   let event: Stripe.Event;
 
   try {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test';
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
+    console.error('Webhook error:', err.message);
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object as Stripe.Checkout.Session;
-      
-      await supabase.from('users').upsert({
-        email: session.customer_email,
-        tier: session.metadata?.tier || 'premium',
-        stripe_customer_id: session.customer,
-        stripe_subscription_id: session.subscription,
-        subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      });
-      break;
-
-    case 'customer.subscription.deleted':
-      const subscription = event.data.object as Stripe.Subscription;
-      
-      await supabase
-        .from('users')
-        .update({ tier: 'free', stripe_subscription_id: null })
-        .eq('stripe_customer_id', subscription.customer);
-      break;
-  }
+  // Log les events pour debug
+  console.log('Stripe event:', event.type);
 
   return NextResponse.json({ received: true });
 }
