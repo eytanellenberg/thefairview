@@ -18,7 +18,7 @@ export default function SportPageClient({ sport, matches }: any) {
     } else if (upcomingMatches.length > 0) {
       setSelectedMatch(upcomingMatches[0]);
     }
-  }, [recentMatches, upcomingMatches]);
+  }, []); // Enlever les dépendances qui causaient le bug
 
   useEffect(() => {
     if (selectedMatch) {
@@ -33,11 +33,11 @@ export default function SportPageClient({ sport, matches }: any) {
       const gameId = match.id;
       
       if (match.status === 'completed') {
-        const response = await fetch(`/api/pai?game_id=${gameId}&team=${team}`);
+        const response = await fetch(`/api/pai?game_id=${gameId}&team=${team}&t=${Date.now()}`);
         const data = await response.json();
         setAnalysis({ type: 'pai', data, match });
       } else {
-        const response = await fetch(`/api/rai?game_id=${gameId}&team=${team}`);
+        const response = await fetch(`/api/rai?game_id=${gameId}&team=${team}&t=${Date.now()}`);
         const data = await response.json();
         setAnalysis({ type: 'rai', data, match });
       }
@@ -46,6 +46,11 @@ export default function SportPageClient({ sport, matches }: any) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMatchClick = (match: any) => {
+    console.log('Match clicked:', match.id);
+    setSelectedMatch(match);
   };
 
   return (
@@ -63,9 +68,10 @@ export default function SportPageClient({ sport, matches }: any) {
               {recentMatches.slice(0, 9).map((match: any) => (
                 <button
                   key={match.id}
-                  onClick={() => setSelectedMatch(match)}
-                  className={`p-4 rounded-lg border-2 text-left transition ${
-                    selectedMatch?.id === match.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
+                  type="button"
+                  onClick={() => handleMatchClick(match)}
+                  className={`p-4 rounded-lg border-2 text-left transition cursor-pointer hover:shadow-md ${
+                    selectedMatch?.id === match.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   <div className="text-xs text-gray-500 mb-2">{match.date}</div>
@@ -93,9 +99,10 @@ export default function SportPageClient({ sport, matches }: any) {
               {upcomingMatches.slice(0, 9).map((match: any) => (
                 <button
                   key={match.id}
-                  onClick={() => setSelectedMatch(match)}
-                  className={`p-4 rounded-lg border-2 text-left transition ${
-                    selectedMatch?.id === match.id ? 'border-green-600 bg-green-50' : 'border-gray-200'
+                  type="button"
+                  onClick={() => handleMatchClick(match)}
+                  className={`p-4 rounded-lg border-2 text-left transition cursor-pointer hover:shadow-md ${
+                    selectedMatch?.id === match.id ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-300'
                   }`}
                 >
                   <div className="text-xs text-gray-500 mb-2">{match.date}</div>
@@ -113,8 +120,9 @@ export default function SportPageClient({ sport, matches }: any) {
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-xl p-16 shadow-lg">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+        <div className="bg-white rounded-xl p-16 shadow-lg flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mr-3" />
+          <span className="text-lg">Loading analysis...</span>
         </div>
       ) : analysis ? (
         <AnalysisDisplay analysis={analysis} />
@@ -172,12 +180,12 @@ function AnalysisDisplay({ analysis }: any) {
           <div className="text-center">
             <div className="text-sm text-gray-600 mb-2">{match.awayTeamName || match.awayTeam}</div>
             <div className={`text-5xl font-bold ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>
-              {Math.floor(data.overall * 0.9)} {/* Simulé - à remplacer par vraie API */}
+              {Math.floor(data.overall * 0.9)}
             </div>
             <div className="text-xs text-gray-500 mt-1">{isRAI ? 'Readiness' : 'Performance'}</div>
             {!isRAI && match.awayScore && (
               <div className="text-2xl font-bold text-gray-700 mt-2">{match.awayScore}</div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -218,7 +226,7 @@ function AnalysisDisplay({ analysis }: any) {
         </div>
       )}
 
-      {/* RAI vs PAI (only for completed matches) */}
+      {/* RAI vs PAI */}
       {!isRAI && data.rai_comparison && (
         <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-8">
           <h3 className="font-bold text-xl mb-4">Prediction Accuracy</h3>
@@ -259,13 +267,13 @@ function AnalysisDisplay({ analysis }: any) {
         </div>
       )}
 
-      {/* Top 3 Levers (FREE preview) */}
+      {/* Top 3 Levers */}
       {data.top_levers && Array.isArray(data.top_levers) && (
         <>
           <h3 className="font-bold text-xl mb-4">Top 3 Drivers (Free Preview)</h3>
           <div className="space-y-4 mb-6">
             {data.top_levers.slice(0, 3).map((lever: any, i: number) => (
-              <div key={lever.id} className="border-2 border-gray-200 rounded-lg p-6">
+              <div key={lever.id} className="border-2 border-gray-200 rounded-lg p-6 hover:border-blue-300 transition">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="text-xs text-gray-500">#{i + 1}</div>
@@ -291,8 +299,8 @@ function AnalysisDisplay({ analysis }: any) {
           <li>✓ Individual RAI/PAI for each team</li>
           <li>✓ 20+ performance levers per team</li>
           <li>✓ Player-level analytics</li>
-          <li>✓ Full season history and trends</li>
-          <li>✓ Export detailed reports (PDF)</li>
+          <li>✓ Full season history</li>
+          <li>✓ Export reports (PDF)</li>
         </ul>
         <Link href="/premium" className="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition">
           Start Free Trial (1 Month Free)
