@@ -18,7 +18,7 @@ export default function SportPageClient({ sport, matches }: any) {
     } else if (upcomingMatches.length > 0) {
       setSelectedMatch(upcomingMatches[0]);
     }
-  }, []); // Enlever les dépendances qui causaient le bug
+  }, []);
 
   useEffect(() => {
     if (selectedMatch) {
@@ -48,11 +48,6 @@ export default function SportPageClient({ sport, matches }: any) {
     }
   };
 
-  const handleMatchClick = (match: any) => {
-    console.log('Match clicked:', match.id);
-    setSelectedMatch(match);
-  };
-
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
       <div className="bg-white rounded-xl p-6 shadow-lg mb-8">
@@ -68,10 +63,9 @@ export default function SportPageClient({ sport, matches }: any) {
               {recentMatches.slice(0, 9).map((match: any) => (
                 <button
                   key={match.id}
-                  type="button"
-                  onClick={() => handleMatchClick(match)}
-                  className={`p-4 rounded-lg border-2 text-left transition cursor-pointer hover:shadow-md ${
-                    selectedMatch?.id === match.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                  onClick={() => setSelectedMatch(match)}
+                  className={`p-4 rounded-lg border-2 text-left transition ${
+                    selectedMatch?.id === match.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
                   }`}
                 >
                   <div className="text-xs text-gray-500 mb-2">{match.date}</div>
@@ -99,10 +93,9 @@ export default function SportPageClient({ sport, matches }: any) {
               {upcomingMatches.slice(0, 9).map((match: any) => (
                 <button
                   key={match.id}
-                  type="button"
-                  onClick={() => handleMatchClick(match)}
-                  className={`p-4 rounded-lg border-2 text-left transition cursor-pointer hover:shadow-md ${
-                    selectedMatch?.id === match.id ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-green-300'
+                  onClick={() => setSelectedMatch(match)}
+                  className={`p-4 rounded-lg border-2 text-left transition ${
+                    selectedMatch?.id === match.id ? 'border-green-600 bg-green-50' : 'border-gray-200'
                   }`}
                 >
                   <div className="text-xs text-gray-500 mb-2">{match.date}</div>
@@ -120,9 +113,8 @@ export default function SportPageClient({ sport, matches }: any) {
       </div>
 
       {loading ? (
-        <div className="bg-white rounded-xl p-16 shadow-lg flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mr-3" />
-          <span className="text-lg">Loading analysis...</span>
+        <div className="bg-white rounded-xl p-16 shadow-lg">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
         </div>
       ) : analysis ? (
         <AnalysisDisplay analysis={analysis} />
@@ -139,7 +131,6 @@ function AnalysisDisplay({ analysis }: any) {
 
   return (
     <div className="bg-white rounded-xl p-8 shadow-lg">
-      {/* Header avec score comparatif */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 mb-8">
         <div className="flex items-center justify-center mb-4">
           <Scale className="w-6 h-6 text-gray-600 mr-2" />
@@ -149,7 +140,6 @@ function AnalysisDisplay({ analysis }: any) {
         </div>
         
         <div className="grid grid-cols-3 gap-8 items-center">
-          {/* Home Team */}
           <div className="text-center">
             <div className="text-sm text-gray-600 mb-2">{match.homeTeamName || match.homeTeam}</div>
             <div className={`text-5xl font-bold ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>
@@ -161,22 +151,13 @@ function AnalysisDisplay({ analysis }: any) {
             )}
           </div>
 
-          {/* VS */}
           <div className="text-center">
             <div className="text-3xl font-bold text-gray-400">VS</div>
-            {isRAI && (
-              <div className="mt-2 text-xs text-gray-600">
-                Pre-Match<br/>Prediction
-              </div>
-            )}
-            {!isRAI && (
-              <div className="mt-2 text-xs text-gray-600">
-                Post-Match<br/>Analysis
-              </div>
-            )}
+            <div className="mt-2 text-xs text-gray-600">
+              {isRAI ? 'Pre-Match Prediction' : 'Post-Match Analysis'}
+            </div>
           </div>
 
-          {/* Away Team */}
           <div className="text-center">
             <div className="text-sm text-gray-600 mb-2">{match.awayTeamName || match.awayTeam}</div>
             <div className={`text-5xl font-bold ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>
@@ -185,11 +166,10 @@ function AnalysisDisplay({ analysis }: any) {
             <div className="text-xs text-gray-500 mt-1">{isRAI ? 'Readiness' : 'Performance'}</div>
             {!isRAI && match.awayScore && (
               <div className="text-2xl font-bold text-gray-700 mt-2">{match.awayScore}</div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Prediction/Result */}
         <div className="mt-4 text-center">
           {isRAI ? (
             <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg inline-block">
@@ -200,22 +180,17 @@ function AnalysisDisplay({ analysis }: any) {
             <div className={`px-4 py-2 rounded-lg inline-block ${
               data.rai_comparison.delta >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
-              <span className="font-bold">{match.homeTeamName || match.homeTeam}</span>{' '}
-              {data.rai_comparison.delta >= 0 ? 'exceeded' : 'underperformed'} prediction by{' '}
+              {data.rai_comparison.delta >= 0 ? 'Exceeded' : 'Below'} prediction by{' '}
               <span className="font-bold">{Math.abs(data.rai_comparison.delta)}</span> points
             </div>
           )}
         </div>
       </div>
 
-      {/* Breakdown */}
       {data.breakdown && Array.isArray(data.breakdown) && (
-        <div>
-          <h3 className="font-bold text-lg mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2" />
-            Performance Breakdown - {match.homeTeamName || match.homeTeam}
-          </h3>
-          <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="mb-8">
+          <h3 className="font-bold text-lg mb-4">Performance Breakdown</h3>
+          <div className="grid grid-cols-3 gap-4">
             {data.breakdown.map((item: any) => (
               <div key={item.category} className={`${isRAI ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} rounded-lg p-4 border`}>
                 <div className={`text-2xl font-bold ${isRAI ? 'text-green-700' : 'text-blue-700'}`}>{item.value}</div>
@@ -226,7 +201,6 @@ function AnalysisDisplay({ analysis }: any) {
         </div>
       )}
 
-      {/* RAI vs PAI */}
       {!isRAI && data.rai_comparison && (
         <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-8">
           <h3 className="font-bold text-xl mb-4">Prediction Accuracy</h3>
@@ -249,36 +223,21 @@ function AnalysisDisplay({ analysis }: any) {
         </div>
       )}
 
-      {/* Narrative */}
       {data.narrative && (
         <div className={`${isRAI ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-6 mb-8`}>
           <h3 className="font-bold text-lg mb-2">{data.narrative.title}</h3>
-          <p className="text-gray-700 mb-3">{data.narrative.summary}</p>
-          {data.narrative.key_points && (
-            <ul className="space-y-1">
-              {data.narrative.key_points.map((point: string, i: number) => (
-                <li key={i} className="text-sm text-gray-700 flex items-start">
-                  <span className={`mr-2 ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>•</span>
-                  {point}
-                </li>
-              ))}
-            </ul>
-          )}
+          <p className="text-gray-700">{data.narrative.summary}</p>
         </div>
       )}
 
-      {/* Top 3 Levers */}
       {data.top_levers && Array.isArray(data.top_levers) && (
-        <>
+        <div className="mb-6">
           <h3 className="font-bold text-xl mb-4">Top 3 Drivers (Free Preview)</h3>
-          <div className="space-y-4 mb-6">
+          <div className="space-y-4">
             {data.top_levers.slice(0, 3).map((lever: any, i: number) => (
-              <div key={lever.id} className="border-2 border-gray-200 rounded-lg p-6 hover:border-blue-300 transition">
+              <div key={lever.id} className="border-2 border-gray-200 rounded-lg p-6">
                 <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="text-xs text-gray-500">#{i + 1}</div>
-                    <h4 className="font-bold text-lg">{lever.name}</h4>
-                  </div>
+                  <h4 className="font-bold text-lg">{lever.name}</h4>
                   <div className="text-right">
                     <div className={`text-3xl font-bold ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>{lever.value}</div>
                     <div className="text-xs text-gray-500">{lever.weight}%</div>
@@ -288,22 +247,14 @@ function AnalysisDisplay({ analysis }: any) {
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
 
-      {/* Premium CTA */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-8 text-center">
-        <h4 className="font-bold text-2xl mb-3">🔒 Unlock Full Team-by-Team Analysis</h4>
-        <p className="mb-2 text-lg opacity-90">See detailed breakdown for BOTH teams</p>
-        <ul className="text-left max-w-2xl mx-auto mb-6 space-y-2 opacity-90">
-          <li>✓ Individual RAI/PAI for each team</li>
-          <li>✓ 20+ performance levers per team</li>
-          <li>✓ Player-level analytics</li>
-          <li>✓ Full season history</li>
-          <li>✓ Export reports (PDF)</li>
-        </ul>
-        <Link href="/premium" className="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition">
-          Start Free Trial (1 Month Free)
+        <h4 className="font-bold text-2xl mb-3">🔒 Unlock Full Analysis</h4>
+        <p className="mb-4 opacity-90">See detailed breakdown for BOTH teams + 20+ levers</p>
+        <Link href="/premium" className="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition">
+          Start Free Trial
         </Link>
       </div>
     </div>
