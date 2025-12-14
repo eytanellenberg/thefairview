@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2025-02-24.acacia',
 });
 
 export async function POST(request: Request) {
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       customer_email: email,
       allow_promotion_codes: true,
       subscription_data: {
-        trial_period_days: 30, // 1 mois gratuit
+        trial_period_days: 30,
       },
     });
 
