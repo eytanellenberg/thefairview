@@ -1,64 +1,149 @@
-'use client';
 import Link from 'next/link';
-import { ArrowLeft, Check } from 'lucide-react';
+import { Check, Crown, Building2 } from 'lucide-react';
 
 export default function PremiumPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       <header className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link href="/" className="inline-flex items-center text-blue-600">
-            <ArrowLeft className="w-5 h-5 mr-2" />Back
-          </Link>
+          <Link href="/" className="text-2xl font-bold">TheFairView</Link>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold text-center mb-4">Choose Your Level</h1>
-        <p className="text-xl text-gray-600 text-center mb-12">From casual to professional analytics</p>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white rounded-xl p-8 card-shadow">
-            <h2 className="text-2xl font-bold mb-2">Free</h2>
-            <div className="text-4xl font-bold mb-6">$0</div>
+
+      <main className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-4">Choose Your Plan</h1>
+          <p className="text-xl text-gray-600">Get the most accurate pre-match and post-match analytics</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          {/* FREE */}
+          <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-gray-200">
+            <h3 className="text-2xl font-bold mb-2">Free</h3>
+            <div className="text-4xl font-bold mb-6">$0<span className="text-lg text-gray-500">/month</span></div>
             <ul className="space-y-3 mb-8">
-              <li className="flex"><Check className="w-5 h-5 text-green-600 mr-2"/>Latest PAI</li>
-              <li className="flex"><Check className="w-5 h-5 text-green-600 mr-2"/>Next RAI</li>
-              <li className="flex"><Check className="w-5 h-5 text-green-600 mr-2"/>Top 3 levers</li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
+                <span>Basic RAI (3 top levers)</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
+                <span>Basic PAI (3 top levers)</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
+                <span>Last 10 matches per sport</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
+                <span>NBA only</span>
+              </li>
             </ul>
-            <Link href="/" className="block w-full text-center bg-gray-200 py-3 rounded-lg">Current Plan</Link>
+            <Link href="/" className="block w-full bg-gray-200 text-gray-800 text-center py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+              Current Plan
+            </Link>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-xl p-8 card-shadow ring-4 ring-blue-300">
-            <div className="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-sm font-bold inline-block mb-4">
-              POPULAR
+          {/* PREMIUM */}
+          <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-blue-600 relative">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+              MOST POPULAR
             </div>
-            <h2 className="text-2xl font-bold mb-2">Premium Analyst</h2>
-            <div className="text-4xl font-bold mb-6">$49<span className="text-lg">/mo</span></div>
+            <div className="flex items-center mb-2">
+              <Crown className="w-6 h-6 text-blue-600 mr-2" />
+              <h3 className="text-2xl font-bold">Premium</h3>
+            </div>
+            <div className="text-4xl font-bold mb-6">$19<span className="text-lg text-gray-500">/month</span></div>
             <ul className="space-y-3 mb-8">
-              <li className="flex"><Check className="w-5 h-5 mr-2"/>Everything in Free</li>
-              <li className="flex"><Check className="w-5 h-5 mr-2"/>All levers</li>
-              <li className="flex"><Check className="w-5 h-5 mr-2"/>Historical data</li>
-              <li className="flex"><Check className="w-5 h-5 mr-2"/>Export data</li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
+                <span className="font-semibold">Complete RAI (all levers + patterns)</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
+                <span className="font-semibold">Complete PAI + RAI vs PAI comparison</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
+                <span>Unlimited match history</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
+                <span>All sports (NBA, NFL, NHL, MLB, Soccer)</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
+                <span>Export to PDF</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
+                <span>Advanced statistics</span>
+              </li>
             </ul>
-            <a href="mailto:eytan_ellenberg@yahoo.fr?subject=Premium Analyst" 
-               className="block w-full text-center bg-white text-blue-600 py-3 rounded-lg font-medium">
-              Contact for Access
-            </a>
+            <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-xl transition">
+              Subscribe via Stripe
+            </button>
           </div>
 
-          <div className="bg-white rounded-xl p-8 card-shadow">
-            <h2 className="text-2xl font-bold mb-2">Premium Club</h2>
-            <div className="text-4xl font-bold mb-6">Custom</div>
+          {/* PREMIUM CLUB */}
+          <div className="bg-gradient-to-br from-purple-900 to-blue-900 text-white rounded-2xl p-8 shadow-2xl">
+            <div className="flex items-center mb-2">
+              <Building2 className="w-6 h-6 mr-2" />
+              <h3 className="text-2xl font-bold">Premium Club</h3>
+            </div>
+            <div className="text-4xl font-bold mb-6">$99<span className="text-lg opacity-80">/month</span></div>
             <ul className="space-y-3 mb-8">
-              <li className="flex"><Check className="w-5 h-5 text-green-600 mr-2"/>Everything in Analyst</li>
-              <li className="flex"><Check className="w-5 h-5 text-green-600 mr-2"/>Upload your data</li>
-              <li className="flex"><Check className="w-5 h-5 text-green-600 mr-2"/>Custom analysis</li>
-              <li className="flex"><Check className="w-5 h-5 text-green-600 mr-2"/>API access</li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-yellow-400 mr-2 mt-0.5" />
+                <span className="font-semibold">Everything in Premium +</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-yellow-400 mr-2 mt-0.5" />
+                <span className="font-semibold">Upload your team's proprietary data</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-yellow-400 mr-2 mt-0.5" />
+                <span>Personalized RAI with your data</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-yellow-400 mr-2 mt-0.5" />
+                <span>API access for integration</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-yellow-400 mr-2 mt-0.5" />
+                <span>Admin dashboard</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-yellow-400 mr-2 mt-0.5" />
+                <span>Automated data ingestion</span>
+              </li>
+              <li className="flex items-start">
+                <Check className="w-5 h-5 text-yellow-400 mr-2 mt-0.5" />
+                <span>Priority support</span>
+              </li>
             </ul>
-            <a href="mailto:eytan_ellenberg@yahoo.fr?subject=Premium Club" 
-               className="block w-full text-center bg-blue-600 text-white py-3 rounded-lg">
-              Contact for Quote
-            </a>
+            <button className="w-full bg-yellow-400 text-purple-900 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition">
+              Contact Sales
+            </button>
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="bg-white rounded-2xl p-8 shadow-lg">
+          <h2 className="text-3xl font-bold mb-6">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-bold mb-2">How do I pay?</h3>
+              <p className="text-gray-600">We use Stripe for secure payment processing. Accept all major credit cards, Google Pay, and Apple Pay.</p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">Can I cancel anytime?</h3>
+              <p className="text-gray-600">Yes! Cancel anytime from your account settings. No questions asked.</p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2">How does Premium Club data upload work?</h3>
+              <p className="text-gray-600">Upload CSV/Excel files or connect via API. Our system automatically processes and integrates your data into RAI calculations.</p>
+            </div>
           </div>
         </div>
       </main>

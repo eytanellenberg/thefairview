@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { getNBASchedule } from '../lib/nba-api';
+import { getNBASchedule, getNFLSchedule, getNHLSchedule, getMLBSchedule, getSoccerSchedule } from '../lib/sports-api';
 import SportPageClient from './SportPageClient';
 
 export default async function SportPage({ params }: { params: { sport: string } }) {
@@ -8,8 +8,22 @@ export default async function SportPage({ params }: { params: { sport: string } 
   
   let matches: any[] = [];
   
-  if (sport === 'nba') {
-    matches = await getNBASchedule();
+  switch(sport.toLowerCase()) {
+    case 'nba':
+      matches = await getNBASchedule();
+      break;
+    case 'nfl':
+      matches = await getNFLSchedule();
+      break;
+    case 'nhl':
+      matches = await getNHLSchedule();
+      break;
+    case 'mlb':
+      matches = await getMLBSchedule();
+      break;
+    case 'soccer':
+      matches = await getSoccerSchedule();
+      break;
   }
 
   return (
@@ -20,7 +34,9 @@ export default async function SportPage({ params }: { params: { sport: string } 
             <Link href="/" className="text-blue-600"><ArrowLeft className="w-6 h-6" /></Link>
             <h1 className="text-2xl font-bold uppercase">{sport}</h1>
           </div>
-          <Link href="/premium" className="bg-blue-600 text-white px-4 py-2 rounded">Upgrade</Link>
+          <Link href="/premium" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition">
+            Upgrade to Premium
+          </Link>
         </div>
       </header>
       
