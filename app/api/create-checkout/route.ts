@@ -10,8 +10,8 @@ export async function POST(request: Request) {
     const { tier, email } = await request.json();
     
     const prices = {
-      premium: 'price_1234567890', // À remplacer par votre Stripe Price ID
-      club: 'price_0987654321'
+      premium: 'price_1SeDaqRrNIM7lmCEp0at3ESR',
+      club: 'price_1SeDbXRrNIM7lmCEcNTk3Mqp'
     };
     
     const session = await stripe.checkout.sessions.create({
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_URL || 'https://thefairview-sport.vercel.app'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL || 'https://thefairview-sport.vercel.app'}/premium`,
+      success_url: `${process.env.NEXT_PUBLIC_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL}/premium`,
       customer_email: email,
       allow_promotion_codes: true,
       subscription_data: {
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ sessionId: session.id });
   } catch (error: any) {
+    console.error('Stripe error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
