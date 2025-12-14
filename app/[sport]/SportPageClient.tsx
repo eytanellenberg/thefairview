@@ -1,70 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar } from 'lucide-react';
-
-const mockRAI = {
-  overall: 73,
-  confidence: 82,
-  narrative: {
-    title: "Strong Readiness via Tactical Edge",
-    summary: "Team shows high readiness across all dimensions",
-    keyPoints: [
-      "Stable lineup creates offensive rhythm",
-      "Favorable matchup history", 
-      "Key players optimally rested"
-    ]
-  },
-  topLevers: [
-    { id: "1", name: "Offensive Rhythm", category: "team" as const, value: 78, weight: 34,
-      description: "Stable lineup with high cohesion",
-      stats: [{ label: "Games Together", value: 12, unit: "" }, { label: "Offensive Rating", value: 118.3, unit: "pts/100" }]
-    },
-    { id: "2", name: "Match-up Advantage", category: "opponent" as const, value: 71, weight: 31,
-      description: "Historical edge vs opponent",
-      stats: [{ label: "Win %", value: 62, unit: "%" }, { label: "PnR Defense", value: 48.3, unit: "%" }]
-    },
-    { id: "3", name: "Player Readiness", category: "individual" as const, value: 69, weight: 29,
-      description: "Optimal rest and form",
-      stats: [{ label: "Days Rest", value: 2, unit: "" }, { label: "Recent PPG", value: 26.4, unit: "" }]
-    }
-  ]
-};
-
-const mockPAI = {
-  overall: 82,
-  concordance: 76,
-  narrative: {
-    title: "Performance Exceeded Expectations",
-    summary: "Team delivered through exceptional shooting",
-    keyPoints: [
-      "Three-point shooting 25% above average",
-      "Defensive rebounding prevented second chances",
-      "Star efficiency matched projections"
-    ]
-  },
-  topLevers: [
-    { id: "1", name: "Three-Point Efficiency", category: "team" as const, value: 88, weight: 38,
-      description: "Shot 47.8% from three",
-      stats: [{ label: "3PT Made/Attempted", value: "18/38", unit: "" }, { label: "3PT %", value: 47.8, unit: "%" }]
-    },
-    { id: "2", name: "Defensive Rebounding", category: "team" as const, value: 79, weight: 32,
-      description: "Dominated defensive glass",
-      stats: [{ label: "Defensive Rebounds", value: 38, unit: "" }, { label: "Def Reb %", value: 79.2, unit: "%" }]
-    },
-    { id: "3", name: "Star Player Impact", category: "individual" as const, value: 76, weight: 28,
-      description: "Efficient 32 points",
-      stats: [{ label: "Points", value: 32, unit: "" }, { label: "FG %", value: 52.4, unit: "%" }]
-    }
-  ]
-};
+import { Calendar, Loader2 } from 'lucide-react';
 
 export default function SportPageClient({ sport, matches }: any) {
   const [selectedMatch, setSelectedMatch] = useState(matches[0]);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   
   const pastMatches = matches.filter((m: any) => m.status === 'completed');
   const upcomingMatches = matches.filter((m: any) => m.status === 'upcoming');
+
+  // Charger l'analyse quand un match est sélectionné
+  useEffect(() => {
+    if (selectedMatch) {
+      loadAnalysis(selectedMatch);
+    }
+  }, [selectedMatch]);
+
+  const loadAnalysis = async (match: any) => {
+    setLoading(true);
+    try {
+      const team = match.homeTeam;
+      const gameId = match.id;
+      
+      if (match.status === 'completed') {
+        // Charger PAI pour matchs terminés
+        const response = await fetch(`/api/pai?game_id=${gameId}&team=${team}`);
+        const data = await response.json();
+        setAnalysis({ type: 'pai', data });
+      } else {
+        // Charger RAI pour matchs à venir
+        const response = await fetch(`/api/rai?game_id=${gameId}&team=${team}`);
+        const data = await response.json();
+        setAnalysis({ type: 'rai', data });
+      }
+    } catch (error) {
+      console.error('Error loading analysis:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
@@ -138,78 +115,18 @@ export default function SportPageClient({ sport, matches }: any) {
         )}
       </div>
 
-      {selectedMatch && (
-        selectedMatch.status === 'completed' ? (
-          <div className="bg-white rounded-xl p-8 card-shadow">
-            <div className="flex justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">
-                  {selectedMatch.homeTeamName || selectedMatch.homeTeam} vs {selectedMatch.awayTeamName || selectedMatch.awayTeam}
-                </h2>
-                <p className="text-gray-600">Post-Match Performance Analysis • {selectedMatch.date}</p>
-                <p className="text-sm text-gray-500">Final Score: {selectedMatch.homeScore}-{selectedMatch.awayScore}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-5xl font-bold text-blue-600">{mockPAI.overall}</div>
-                <p className="text-sm text-gray-600">PAI Score</p>
-                <p className="text-xs text-gray-500 mt-1">Concordance: {mockPAI.concordance}%</p>
-              </div>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <h3 className="font-bold mb-2">{mockPAI.narrative.title}</h3>
-              <p className="text-gray-700 mb-4">{mockPAI.narrative.summary}</p>
-              <ul className="space-y-2">
-                {mockPAI.narrative.keyPoints.map((point, i) => (
-                  <li key={i} className="flex items-start">
-                    <span className="text-blue-600 mr-2">▸</span>
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <h3 className="font-bold mb-4">Top 3 Performance Drivers</h3>
-            <div className="space-y-4">
-              {mockPAI.topLevers.map((lever, i) => (
-                <LeverCard key={lever.id} lever={lever} index={i} />
-              ))}
-            </div>
-          </div>
+      {loading ? (
+        <div className="bg-white rounded-xl p-16 card-shadow flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span className="ml-3 text-gray-600">Loading analysis...</span>
+        </div>
+      ) : analysis ? (
+        analysis.type === 'pai' ? (
+          <PAIDisplay match={selectedMatch} data={analysis.data} />
         ) : (
-          <div className="bg-white rounded-xl p-8 card-shadow">
-            <div className="flex justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold">
-                  {selectedMatch.homeTeamName || selectedMatch.homeTeam} vs {selectedMatch.awayTeamName || selectedMatch.awayTeam}
-                </h2>
-                <p className="text-gray-600">Pre-Match Readiness Analysis • {selectedMatch.date}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-5xl font-bold text-green-600">{mockRAI.overall}</div>
-                <p className="text-sm text-gray-600">RAI Score</p>
-                <p className="text-xs text-gray-500 mt-1">Confidence: {mockRAI.confidence}%</p>
-              </div>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-              <h3 className="font-bold mb-2">{mockRAI.narrative.title}</h3>
-              <p className="text-gray-700 mb-4">{mockRAI.narrative.summary}</p>
-              <ul className="space-y-2">
-                {mockRAI.narrative.keyPoints.map((point, i) => (
-                  <li key={i} className="flex items-start">
-                    <span className="text-green-600 mr-2">▸</span>
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <h3 className="font-bold mb-4">Top 3 Readiness Drivers</h3>
-            <div className="space-y-4">
-              {mockRAI.topLevers.map((lever, i) => (
-                <LeverCard key={lever.id} lever={lever} index={i} />
-              ))}
-            </div>
-          </div>
+          <RAIDisplay match={selectedMatch} data={analysis.data} />
         )
-      )}
+      ) : null}
 
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8 mt-8">
         <h3 className="text-xl font-bold mb-2">Want Deeper Insights?</h3>
@@ -219,6 +136,112 @@ export default function SportPageClient({ sport, matches }: any) {
         </Link>
       </div>
     </main>
+  );
+}
+
+function RAIDisplay({ match, data }: any) {
+  return (
+    <div className="bg-white rounded-xl p-8 card-shadow">
+      <div className="flex justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">
+            {match.homeTeamName || match.homeTeam} vs {match.awayTeamName || match.awayTeam}
+          </h2>
+          <p className="text-gray-600">Pre-Match Readiness Analysis • {match.date}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-5xl font-bold text-green-600">{data.overall}</div>
+          <p className="text-sm text-gray-600">RAI Score</p>
+          <p className="text-xs text-gray-500 mt-1">Confidence: {data.confidence}%</p>
+        </div>
+      </div>
+      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+        <h3 className="font-bold mb-2">{data.narrative.title}</h3>
+        <p className="text-gray-700 mb-4">{data.narrative.summary}</p>
+        <ul className="space-y-2">
+          {data.narrative.key_points.map((point: string, i: number) => (
+            <li key={i} className="flex items-start">
+              <span className="text-green-600 mr-2">▸</span>
+              <span>{point}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <h3 className="font-bold mb-4">Top 3 Readiness Drivers</h3>
+      <div className="space-y-4">
+        {data.top_levers.map((lever: any, i: number) => (
+          <LeverCard key={lever.id} lever={lever} index={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PAIDisplay({ match, data }: any) {
+  return (
+    <div className="bg-white rounded-xl p-8 card-shadow">
+      <div className="flex justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">
+            {match.homeTeamName || match.homeTeam} vs {match.awayTeamName || match.awayTeam}
+          </h2>
+          <p className="text-gray-600">Post-Match Performance Analysis • {match.date}</p>
+          <p className="text-sm text-gray-500">Final Score: {match.homeScore}-{match.awayScore}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-5xl font-bold text-blue-600">{data.overall}</div>
+          <p className="text-sm text-gray-600">PAI Score</p>
+          <p className="text-xs text-gray-500 mt-1">Concordance: {data.concordance}%</p>
+        </div>
+      </div>
+
+      {/* RAI vs PAI Comparison */}
+      {data.rai_comparison && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+          <h3 className="font-bold mb-3">Pre-Match Prediction vs Actual Performance</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-gray-600 mb-1">RAI Expected</p>
+              <p className="text-2xl font-bold text-purple-700">{data.rai_comparison.expected}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 mb-1">PAI Actual</p>
+              <p className="text-2xl font-bold text-blue-600">{data.rai_comparison.actual}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 mb-1">Delta</p>
+              <p className={`text-2xl font-bold ${data.rai_comparison.delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {data.rai_comparison.delta >= 0 ? '+' : ''}{data.rai_comparison.delta}
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-700 mt-3">
+            {data.rai_comparison.delta >= 0 
+              ? '✓ Team exceeded pre-match readiness expectations' 
+              : '✗ Team underperformed relative to readiness indicators'}
+          </p>
+        </div>
+      )}
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+        <h3 className="font-bold mb-2">{data.narrative.title}</h3>
+        <p className="text-gray-700 mb-4">{data.narrative.summary}</p>
+        <ul className="space-y-2">
+          {data.narrative.key_points.map((point: string, i: number) => (
+            <li key={i} className="flex items-start">
+              <span className="text-blue-600 mr-2">▸</span>
+              <span>{point}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <h3 className="font-bold mb-4">Top 3 Performance Drivers</h3>
+      <div className="space-y-4">
+        {data.top_levers.map((lever: any, i: number) => (
+          <LeverCard key={lever.id} lever={lever} index={i} />
+        ))}
+      </div>
+    </div>
   );
 }
 
