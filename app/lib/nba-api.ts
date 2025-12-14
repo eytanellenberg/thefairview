@@ -1,157 +1,79 @@
-export interface Match {
-  id: string;
-  date: string;
-  homeTeam: string;
-  awayTeam: string;
-  homeTeamName: string;
-  awayTeamName: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  status: 'completed' | 'upcoming';
-}
+export async function getNBASchedule() {
+  const teams = [
+    { code: 'LAL', name: 'Lakers' },
+    { code: 'GSW', name: 'Warriors' },
+    { code: 'BOS', name: 'Celtics' },
+    { code: 'MIA', name: 'Heat' },
+    { code: 'MIL', name: 'Bucks' },
+    { code: 'BKN', name: 'Nets' },
+    { code: 'DEN', name: 'Nuggets' },
+    { code: 'PHX', name: 'Suns' },
+    { code: 'DAL', name: 'Mavericks' },
+    { code: 'LAC', name: 'Clippers' },
+    { code: 'PHI', name: '76ers' },
+    { code: 'NYK', name: 'Knicks' },
+    { code: 'TOR', name: 'Raptors' },
+    { code: 'CHI', name: 'Bulls' },
+    { code: 'ATL', name: 'Hawks' },
+    { code: 'CLE', name: 'Cavaliers' },
+  ];
 
-const NBA_TEAMS: Record<string, string> = {
-  'LAL': 'Lakers',
-  'GSW': 'Warriors',
-  'BOS': 'Celtics',
-  'MIA': 'Heat',
-  'MIL': 'Bucks',
-  'BKN': 'Nets',
-  'DEN': 'Nuggets',
-  'PHX': 'Suns',
-  'DAL': 'Mavericks',
-  'LAC': 'Clippers',
-  'PHI': '76ers',
-  'NYK': 'Knicks',
-  'TOR': 'Raptors',
-  'CHI': 'Bulls',
-  'ATL': 'Hawks',
-  'CLE': 'Cavaliers',
-  'MEM': 'Grizzlies',
-  'SAC': 'Kings',
-  'NOP': 'Pelicans',
-  'MIN': 'Timberwolves',
-  'OKC': 'Thunder',
-  'POR': 'Trail Blazers',
-  'UTA': 'Jazz',
-  'SAS': 'Spurs',
-  'HOU': 'Rockets',
-  'ORL': 'Magic',
-  'WAS': 'Wizards',
-  'DET': 'Pistons',
-  'CHA': 'Hornets',
-  'IND': 'Pacers'
-};
+  const matches = [];
+  const now = Date.now();
 
-function getMockSchedule(): { recent: Match[], upcoming: Match[] } {
-  const teams = Object.keys(NBA_TEAMS);
-  const recent: Match[] = [];
-  const upcoming: Match[] = [];
-  
-  // Créer 15 matchs passés (30 équipes)
-  for (let i = 0; i < 15; i++) {
-    const homeTeam = teams[i * 2];
-    const awayTeam = teams[i * 2 + 1];
-    const date = new Date();
-    date.setDate(date.getDate() - Math.floor(Math.random() * 7) - 1);
-    
-    recent.push({
-      id: `past-${i}`,
-      date: date.toISOString().split('T')[0],
-      homeTeam,
-      awayTeam,
-      homeTeamName: NBA_TEAMS[homeTeam],
-      awayTeamName: NBA_TEAMS[awayTeam],
+  // 20 matchs passés
+  for (let i = 0; i < 20; i++) {
+    const home = teams[Math.floor(Math.random() * teams.length)];
+    const away = teams[Math.floor(Math.random() * teams.length)];
+    if (home.code === away.code) continue;
+
+    matches.push({
+      id: `match-past-${i}`,
+      date: new Date(now - (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      homeTeam: home.code,
+      awayTeam: away.code,
+      homeTeamName: home.name,
+      awayTeamName: away.name,
       homeScore: Math.floor(Math.random() * 30) + 95,
       awayScore: Math.floor(Math.random() * 30) + 95,
-      status: 'completed'
+      status: 'completed',
     });
   }
-  
-  // Créer 15 matchs futurs
-  for (let i = 0; i < 15; i++) {
-    const homeTeam = teams[i * 2];
-    const awayTeam = teams[i * 2 + 1];
-    const date = new Date();
-    date.setDate(date.getDate() + Math.floor(Math.random() * 7) + 1);
-    
-    upcoming.push({
-      id: `future-${i}`,
-      date: date.toISOString().split('T')[0],
-      homeTeam,
-      awayTeam,
-      homeTeamName: NBA_TEAMS[homeTeam],
-      awayTeamName: NBA_TEAMS[awayTeam],
+
+  // 20 matchs futurs
+  for (let i = 0; i < 20; i++) {
+    const home = teams[Math.floor(Math.random() * teams.length)];
+    const away = teams[Math.floor(Math.random() * teams.length)];
+    if (home.code === away.code) continue;
+
+    matches.push({
+      id: `match-future-${i}`,
+      date: new Date(now + (i + 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      homeTeam: home.code,
+      awayTeam: away.code,
+      homeTeamName: home.name,
+      awayTeamName: away.name,
       homeScore: null,
       awayScore: null,
-      status: 'upcoming'
+      status: 'upcoming',
     });
   }
-  
-  return { recent, upcoming };
-}
 
-export async function getNBASchedule(): Promise<{ recent: Match[], upcoming: Match[] }> {
-  try {
-    const response = await fetch(
-      'https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json',
-      { next: { revalidate: 300 } }
-    );
-    
-    if (!response.ok) {
-      throw new Error('NBA API failed');
-    }
-    
-    const data = await response.json();
-    
-    if (!data.scoreboard?.games || data.scoreboard.games.length === 0) {
-      return getMockSchedule();
-    }
-    
-    const matches: Match[] = data.scoreboard.games.map((game: any) => ({
-      id: game.gameId,
-      date: game.gameTimeUTC.split('T')[0],
-      homeTeam: game.homeTeam.teamTricode,
-      awayTeam: game.awayTeam.teamTricode,
-      homeTeamName: game.homeTeam.teamName,
-      awayTeamName: game.awayTeam.teamName,
-      homeScore: game.homeTeam.score || null,
-      awayScore: game.awayTeam.score || null,
-      status: game.gameStatus === 3 ? 'completed' : 'upcoming',
-    }));
-    
-    const recent = matches.filter(m => m.status === 'completed');
-    const upcoming = matches.filter(m => m.status === 'upcoming');
-    
-    // Si pas assez de données, compléter avec mock
-    if (recent.length < 10 || upcoming.length < 10) {
-      const mock = getMockSchedule();
-      return {
-        recent: recent.length > 0 ? recent : mock.recent,
-        upcoming: upcoming.length > 0 ? upcoming : mock.upcoming
-      };
-    }
-    
-    return { recent, upcoming };
-    
-  } catch (error) {
-    console.error('NBA API error:', error);
-    return getMockSchedule();
-  }
+  return matches;
 }
 
 export async function getNFLSchedule() {
-  return { recent: [], upcoming: [] };
+  return [];
 }
 
 export async function getMLBSchedule() {
-  return { recent: [], upcoming: [] };
+  return [];
 }
 
 export async function getNHLSchedule() {
-  return { recent: [], upcoming: [] };
+  return [];
 }
 
 export async function getSoccerSchedule() {
-  return { recent: [], upcoming: [] };
+  return [];
 }
