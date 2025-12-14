@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Calendar, Loader2, TrendingUp, Scale } from 'lucide-react';
+import { Calendar, Loader2, TrendingUp, Target } from 'lucide-react';
 
 export default function SportPageClient({ sport, matches }: any) {
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
@@ -77,9 +77,6 @@ export default function SportPageClient({ sport, matches }: any) {
                     <span className="font-semibold text-sm">{match.awayTeamName || match.awayTeam}</span>
                     <span className="font-bold text-lg">{match.awayScore}</span>
                   </div>
-                  <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mt-2 inline-block">
-                    PAI Analysis
-                  </div>
                 </button>
               ))}
             </div>
@@ -102,9 +99,6 @@ export default function SportPageClient({ sport, matches }: any) {
                   <div className="font-semibold text-sm">{match.homeTeamName || match.homeTeam}</div>
                   <div className="text-xs text-gray-500">vs</div>
                   <div className="font-semibold text-sm">{match.awayTeamName || match.awayTeam}</div>
-                  <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded mt-2 inline-block">
-                    RAI Prediction
-                  </div>
                 </button>
               ))}
             </div>
@@ -117,144 +111,226 @@ export default function SportPageClient({ sport, matches }: any) {
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
         </div>
       ) : analysis ? (
-        <AnalysisDisplay analysis={analysis} />
+        analysis.type === 'rai' ? (
+          <RAIDisplay analysis={analysis} />
+        ) : (
+          <PAIDisplay analysis={analysis} />
+        )
       ) : null}
     </main>
   );
 }
 
-function AnalysisDisplay({ analysis }: any) {
-  const { type, data, match } = analysis;
-  const isRAI = type === 'rai';
-
+function RAIDisplay({ analysis }: any) {
+  const { data, match } = analysis;
   if (!data || !match) return null;
+
+  const awayRAI = Math.floor(data.overall * 0.9);
+  const diff = data.overall - awayRAI;
 
   return (
     <div className="bg-white rounded-xl p-8 shadow-lg">
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-center mb-4">
-          <Scale className="w-6 h-6 text-gray-600 mr-2" />
-          <h3 className="text-lg font-bold text-gray-700">
-            {isRAI ? 'RAI COMPARATIVE ANALYSIS' : 'PAI COMPARATIVE ANALYSIS'}
-          </h3>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-8 items-center">
-          <div className="text-center">
-            <div className="text-sm text-gray-600 mb-2">{match.homeTeamName || match.homeTeam}</div>
-            <div className={`text-5xl font-bold ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>
-              {data.overall}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">{isRAI ? 'Readiness' : 'Performance'}</div>
-            {!isRAI && match.homeScore && (
-              <div className="text-2xl font-bold text-gray-700 mt-2">{match.homeScore}</div>
-            )}
-          </div>
+      <div className="border-b pb-6 mb-6">
+        <h2 className="text-2xl font-bold mb-2">PRE-MATCH PREDICTION (RAI)</h2>
+        <p className="text-gray-600">{match.date} • {match.homeTeamName} vs {match.awayTeamName}</p>
+      </div>
 
+      {/* Comparative scores */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-8 mb-8">
+        <h3 className="text-center text-lg font-bold mb-6 text-gray-700">READINESS COMPARISON</h3>
+        <div className="grid grid-cols-2 gap-12">
           <div className="text-center">
-            <div className="text-3xl font-bold text-gray-400">VS</div>
-            <div className="mt-2 text-xs text-gray-600">
-              {isRAI ? 'Pre-Match Prediction' : 'Post-Match Analysis'}
-            </div>
+            <div className="text-sm text-gray-600 mb-2">{match.homeTeamName}</div>
+            <div className="text-6xl font-bold text-green-600 mb-2">{data.overall}</div>
+            <div className="text-xs text-gray-500">RAI Score</div>
           </div>
-
           <div className="text-center">
-            <div className="text-sm text-gray-600 mb-2">{match.awayTeamName || match.awayTeam}</div>
-            <div className={`text-5xl font-bold ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>
-              {Math.floor(data.overall * 0.9)}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">{isRAI ? 'Readiness' : 'Performance'}</div>
-            {!isRAI && match.awayScore && (
-              <div className="text-2xl font-bold text-gray-700 mt-2">{match.awayScore}</div>
-            )}
+            <div className="text-sm text-gray-600 mb-2">{match.awayTeamName}</div>
+            <div className="text-6xl font-bold text-green-600 mb-2">{awayRAI}</div>
+            <div className="text-xs text-gray-500">RAI Score</div>
           </div>
         </div>
-
-        <div className="mt-4 text-center">
-          {isRAI ? (
-            <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg inline-block">
-              <span className="font-bold">{match.homeTeamName || match.homeTeam}</span> favored by{' '}
-              <span className="font-bold">{Math.abs(data.overall - Math.floor(data.overall * 0.9))}</span> points
-            </div>
-          ) : data.rai_comparison && (
-            <div className={`px-4 py-2 rounded-lg inline-block ${
-              data.rai_comparison.delta >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {data.rai_comparison.delta >= 0 ? 'Exceeded' : 'Below'} prediction by{' '}
-              <span className="font-bold">{Math.abs(data.rai_comparison.delta)}</span> points
-            </div>
-          )}
+        <div className="mt-6 text-center">
+          <div className="bg-green-600 text-white px-6 py-3 rounded-lg inline-block">
+            <span className="font-bold">{match.homeTeamName}</span> favored by{' '}
+            <span className="font-bold text-2xl">{diff}</span> points
+          </div>
         </div>
       </div>
 
+      {/* Breakdown for home team only (FREE) */}
+      <h3 className="font-bold text-xl mb-4">
+        {match.homeTeamName} Readiness Factors (Free Preview)
+      </h3>
+      
       {data.breakdown && Array.isArray(data.breakdown) && (
-        <div className="mb-8">
-          <h3 className="font-bold text-lg mb-4">Performance Breakdown</h3>
-          <div className="grid grid-cols-3 gap-4">
-            {data.breakdown.map((item: any) => (
-              <div key={item.category} className={`${isRAI ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} rounded-lg p-4 border`}>
-                <div className={`text-2xl font-bold ${isRAI ? 'text-green-700' : 'text-blue-700'}`}>{item.value}</div>
-                <div className="text-sm text-gray-700">{item.category}</div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {data.breakdown.map((item: any) => (
+            <div key={item.category} className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="text-3xl font-bold text-green-700 mb-1">{item.value}</div>
+              <div className="text-sm text-gray-700">{item.category}</div>
+            </div>
+          ))}
         </div>
       )}
 
-      {!isRAI && data.rai_comparison && (
-        <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-6 mb-8">
-          <h3 className="font-bold text-xl mb-4">Prediction Accuracy</h3>
-          <div className="grid grid-cols-3 gap-6 text-center">
-            <div>
-              <div className="text-sm text-gray-600 mb-2">Expected (RAI)</div>
-              <div className="text-4xl font-bold">{data.rai_comparison.expected}</div>
+      {/* Top 3 levers */}
+      {data.top_levers && (
+        <div className="space-y-4 mb-8">
+          {data.top_levers.slice(0, 3).map((lever: any, i: number) => (
+            <div key={lever.id} className="border-2 border-gray-200 rounded-lg p-5">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-bold">#{i+1} {lever.name}</h4>
+                <div className="text-3xl font-bold text-green-600">{lever.value}</div>
+              </div>
+              <p className="text-sm text-gray-700">{lever.description}</p>
             </div>
-            <div>
-              <div className="text-sm text-gray-600 mb-2">Actual (PAI)</div>
-              <div className="text-4xl font-bold text-blue-600">{data.rai_comparison.actual}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Premium CTA */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-6">
+        <h4 className="font-bold text-xl mb-2">🔒 Want Full Analysis for BOTH Teams?</h4>
+        <ul className="text-sm mb-4 space-y-1 opacity-90">
+          <li>✓ Complete RAI breakdown for {match.awayTeamName}</li>
+          <li>✓ 20+ readiness factors (not just 3)</li>
+          <li>✓ Player-level analysis</li>
+          <li>✓ Historical matchup data</li>
+        </ul>
+        <Link href="/premium" className="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold">
+          Upgrade to Premium - 1 Month Free
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function PAIDisplay({ analysis }: any) {
+  const { data, match } = analysis;
+  if (!data || !match) return null;
+
+  const awayPAI = Math.floor(data.overall * 0.9);
+  const winner = match.homeScore > match.awayScore ? match.homeTeamName : match.awayTeamName;
+
+  return (
+    <div className="bg-white rounded-xl p-8 shadow-lg">
+      <div className="border-b pb-6 mb-6">
+        <h2 className="text-2xl font-bold mb-2">POST-MATCH ANALYSIS (PAI)</h2>
+        <p className="text-gray-600">{match.date} • Final Score</p>
+      </div>
+
+      {/* Actual score */}
+      <div className="bg-gray-50 rounded-xl p-6 mb-8">
+        <h3 className="text-center text-sm font-bold mb-4 text-gray-600">FINAL SCORE</h3>
+        <div className="grid grid-cols-2 gap-12">
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-2">{match.homeTeamName}</div>
+            <div className="text-7xl font-bold text-gray-900">{match.homeScore}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-2">{match.awayTeamName}</div>
+            <div className="text-7xl font-bold text-gray-900">{match.awayScore}</div>
+          </div>
+        </div>
+        <div className="mt-4 text-center">
+          <div className="text-lg font-bold text-gray-700">{winner} wins</div>
+        </div>
+      </div>
+
+      {/* Performance scores */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 mb-8">
+        <h3 className="text-center text-lg font-bold mb-6 text-gray-700">PERFORMANCE SCORES (PAI)</h3>
+        <div className="grid grid-cols-2 gap-12">
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-2">{match.homeTeamName}</div>
+            <div className="text-6xl font-bold text-blue-600 mb-2">{data.overall}</div>
+            <div className="text-xs text-gray-500">PAI Score</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-2">{match.awayTeamName}</div>
+            <div className="text-6xl font-bold text-blue-600 mb-2">{awayPAI}</div>
+            <div className="text-xs text-gray-500">PAI Score</div>
+          </div>
+        </div>
+      </div>
+
+      {/* RAI vs PAI */}
+      {data.rai_comparison && (
+        <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-6 mb-8">
+          <h3 className="font-bold text-xl mb-4 text-center">
+            DID OUR PREDICTION WORK? ({match.homeTeamName})
+          </h3>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-2">We Predicted (RAI)</div>
+              <div className="text-5xl font-bold text-gray-700">{data.rai_comparison.expected}</div>
             </div>
-            <div>
-              <div className="text-sm text-gray-600 mb-2">Delta</div>
-              <div className={`text-4xl font-bold ${data.rai_comparison.delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-2">Actual Performance (PAI)</div>
+              <div className="text-5xl font-bold text-blue-600">{data.rai_comparison.actual}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-2">Difference</div>
+              <div className={`text-5xl font-bold ${data.rai_comparison.delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {data.rai_comparison.delta >= 0 ? '+' : ''}{data.rai_comparison.delta}
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {data.narrative && (
-        <div className={`${isRAI ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-6 mb-8`}>
-          <h3 className="font-bold text-lg mb-2">{data.narrative.title}</h3>
-          <p className="text-gray-700">{data.narrative.summary}</p>
-        </div>
-      )}
-
-      {data.top_levers && Array.isArray(data.top_levers) && (
-        <div className="mb-6">
-          <h3 className="font-bold text-xl mb-4">Top 3 Drivers (Free Preview)</h3>
-          <div className="space-y-4">
-            {data.top_levers.slice(0, 3).map((lever: any, i: number) => (
-              <div key={lever.id} className="border-2 border-gray-200 rounded-lg p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-bold text-lg">{lever.name}</h4>
-                  <div className="text-right">
-                    <div className={`text-3xl font-bold ${isRAI ? 'text-green-600' : 'text-blue-600'}`}>{lever.value}</div>
-                    <div className="text-xs text-gray-500">{lever.weight}%</div>
-                  </div>
-                </div>
-                <p className="text-gray-700 text-sm">{lever.description}</p>
-              </div>
-            ))}
+          <div className="mt-4 text-center">
+            <div className={`inline-block px-6 py-3 rounded-lg font-bold ${
+              data.rai_comparison.delta >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {data.rai_comparison.delta >= 0 
+                ? `✓ Team performed BETTER than predicted (+${data.rai_comparison.delta})` 
+                : `✗ Team performed WORSE than predicted (${data.rai_comparison.delta})`}
+            </div>
           </div>
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-8 text-center">
-        <h4 className="font-bold text-2xl mb-3">🔒 Unlock Full Analysis</h4>
-        <p className="mb-4 opacity-90">See detailed breakdown for BOTH teams + 20+ levers</p>
-        <Link href="/premium" className="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition">
-          Start Free Trial
+      {/* Performance breakdown */}
+      <h3 className="font-bold text-xl mb-4">
+        {match.homeTeamName} Performance Breakdown (Free Preview)
+      </h3>
+      
+      {data.breakdown && Array.isArray(data.breakdown) && (
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {data.breakdown.map((item: any) => (
+            <div key={item.category} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-3xl font-bold text-blue-700 mb-1">{item.value}</div>
+              <div className="text-sm text-gray-700">{item.category}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Top drivers */}
+      {data.top_levers && (
+        <div className="space-y-4 mb-8">
+          {data.top_levers.slice(0, 3).map((lever: any, i: number) => (
+            <div key={lever.id} className="border-2 border-gray-200 rounded-lg p-5">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-bold">#{i+1} {lever.name}</h4>
+                <div className="text-3xl font-bold text-blue-600">{lever.value}</div>
+              </div>
+              <p className="text-sm text-gray-700">{lever.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Premium CTA */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-6">
+        <h4 className="font-bold text-xl mb-2">🔒 See Full Analysis for BOTH Teams</h4>
+        <ul className="text-sm mb-4 space-y-1 opacity-90">
+          <li>✓ Complete PAI for {match.awayTeamName}</li>
+          <li>✓ RAI vs PAI comparison for both teams</li>
+          <li>✓ Player-by-player breakdown</li>
+          <li>✓ Season-long accuracy tracking</li>
+        </ul>
+        <Link href="/premium" className="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold">
+          Upgrade to Premium
         </Link>
       </div>
     </div>
