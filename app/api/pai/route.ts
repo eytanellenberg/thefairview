@@ -9,75 +9,62 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: 'Missing game_id or team' }, { status: 400 });
   }
   
-  // Calculs PAI
   const shooting = Math.floor(Math.random() * (95 - 70) + 70);
-  const defense = Math.floor(Math.random() * (85 - 65) + 65);
-  const individual = Math.floor(Math.random() * (90 - 60) + 60);
+  const defense = Math.floor(Math.random() * (90 - 65) + 65);
+  const individual = Math.floor(Math.random() * (85 - 60) + 60);
   const overall = Math.round(shooting * 0.38 + defense * 0.32 + individual * 0.30);
-  const concordance = Math.floor(Math.random() * (85 - 65) + 65);
+  
+  const raiScore = Math.floor(Math.random() * (85 - 65) + 65);
+  const delta = overall - raiScore;
   
   return Response.json({
     game_id,
     team,
     overall,
-    concordance,
-    breakdown: {
-      individual,
-      team: Math.round((shooting + defense) / 2),
-      opponent: Math.round(100 - overall)
+    concordance: Math.floor(Math.random() * (95 - 80) + 80),
+    breakdown: [
+      { category: 'Shooting', value: shooting },
+      { category: 'Defense', value: defense },
+      { category: 'Individual', value: individual }
+    ],
+    rai_comparison: {
+      expected: raiScore,
+      actual: overall,
+      delta: delta
     },
     top_levers: [
       {
         id: '1',
         name: 'Shooting Efficiency',
-        category: 'team',
         value: shooting,
         weight: 38,
-        description: 'Field goal and three-point shooting performance',
-        stats: [
-          { label: 'FG%', value: 47.8, unit: '%' },
-          { label: '3PT%', value: 38.5, unit: '%' }
-        ]
+        description: 'Field goal percentage and three-point shooting performance exceeded expectations with hot shooting from key players.'
       },
       {
         id: '2',
-        name: 'Defensive Control',
-        category: 'team',
+        name: 'Defensive Impact',
         value: defense,
         weight: 32,
-        description: 'Defensive rebounding and opponent FG%',
-        stats: [
-          { label: 'Def Reb%', value: 75.2, unit: '%' },
-          { label: 'Opp FG%', value: 41.2, unit: '%' }
-        ]
+        description: 'Opponent points allowed and defensive rating. Team showed strong perimeter defense and rim protection.'
       },
       {
         id: '3',
-        name: 'Star Impact',
-        category: 'individual',
+        name: 'Star Performance',
         value: individual,
         weight: 30,
-        description: 'Key player contribution and efficiency',
-        stats: [
-          { label: 'Points', value: 28, unit: '' },
-          { label: 'Plus/Minus', value: 15, unit: '' }
-        ]
+        description: 'Key player contributions and efficiency. Stars delivered in crucial moments with clutch plays.'
       }
     ],
     narrative: {
-      title: `${team} Performance Analysis`,
-      summary: 'Team exceeded expectations through balanced execution',
+      title: delta >= 0 ? `${team} Exceeded Expectations` : `${team} Underperformed Predictions`,
+      summary: delta >= 0 
+        ? 'Team exceeded expectations through balanced execution across all performance dimensions.'
+        : 'Team fell short of predictions despite some bright spots in execution.',
       key_points: [
-        'Shooting efficiency above season average',
-        'Defensive control limited opponent scoring',
-        'Star players delivered expected impact'
+        delta >= 0 ? 'Shooting efficiency surpassed projections' : 'Shooting below expected levels',
+        delta >= 0 ? 'Defensive intensity matched game plan' : 'Defensive lapses cost opportunities',
+        delta >= 0 ? 'Star players delivered in key moments' : 'Inconsistent execution from key players'
       ]
-    },
-    rai_comparison: {
-      expected: Math.floor(Math.random() * (80 - 65) + 65),
-      actual: overall,
-      delta: Math.floor(Math.random() * 20 - 10),
-      accuracy: concordance
     }
   });
 }
