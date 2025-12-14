@@ -28,7 +28,7 @@ export default function SportPage() {
         weight: 34,
         description: "Stable lineup with high cohesion",
         stats: [
-          { label: "Games Together", value: 12 },
+          { label: "Games Together", value: 12, unit: "" },
           { label: "Offensive Rating", value: 118.3, unit: "pts/100" }
         ]
       },
@@ -52,8 +52,8 @@ export default function SportPage() {
         weight: 29,
         description: "Optimal rest and form",
         stats: [
-          { label: "Days Rest", value: 2 },
-          { label: "Recent PPG", value: 26.4 }
+          { label: "Days Rest", value: 2, unit: "" },
+          { label: "Recent PPG", value: 26.4, unit: "" }
         ]
       }
     ]
@@ -121,7 +121,7 @@ export default function SportPage() {
                   {lever.stats.map((stat, j) => (
                     <div key={j}>
                       <p className="text-xs text-gray-600">{stat.label}</p>
-                      <p className="font-semibold">{stat.value} {stat.unit || ''}</p>
+                      <p className="font-semibold">{stat.value} {stat.unit}</p>
                     </div>
                   ))}
                 </div>
