@@ -3,8 +3,12 @@ import { ArrowLeft } from 'lucide-react';
 import { getNBASchedule } from '../lib/nba-api';
 import SportPageClient from './SportPageClient';
 
-export default async function SportPage({ params }: { params: { sport: string } }) {
-  const { sport } = params;
+interface PageProps {
+  params: Promise<{ sport: string }>;
+}
+
+export default async function SportPage({ params }: PageProps) {
+  const { sport } = await params;
   
   let schedule: { recent: any[]; upcoming: any[] } = { recent: [], upcoming: [] };
   
