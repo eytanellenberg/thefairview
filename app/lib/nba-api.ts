@@ -1,17 +1,32 @@
-// Récupérer TOUS les matchs NBA de la semaine dernière et prochaine
 export async function getNBASchedule() {
   try {
-    const matches: any[] = [];
-    const today = new Date();
+    const allMatches = await fetchNBAMatches();
     
-    // Récupérer les 7 derniers jours
-    for (let i = 7; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-      
+    // Grouper par équipe et prendre le dernier match de chaque
+    const lastMatchPerTeam = getLastMatchPerTeam(allMatches.filter(m => m.status === 'completed'));
+    const nextMatchPerTeam = getNextMatchPerTeam(allMatches.filter(m => m.status === 'upcoming'));
+    
+    return {
+      recent: lastMatchPerTeam,
+      upcoming: nextMatchPerTeam
+    };
+  } catch (error) {
+    console.error('NBA API Error:', error);
+    return getMockScheduleByTeam();
+  }
+}
+
+async function fetchNBAMatches() {
+  const matches: any[] = [];
+  
+  // Récupérer matchs des 7 derniers jours
+  for (let i = 0; i < 7; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    
+    try {
       const response = await fetch(
-        `https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json`,
+        'https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json',
         { next: { revalidate: 300 } }
       );
       
@@ -22,7 +37,6 @@ export async function getNBASchedule() {
             matches.push({
               id: game.gameId,
               date: game.gameTimeUTC.split('T')[0],
-              time: game.gameTimeUTC.split('T')[1].substring(0, 5),
               homeTeam: game.homeTeam.teamTricode,
               awayTeam: game.awayTeam.teamTricode,
               homeTeamName: game.homeTeam.teamName,
@@ -34,143 +48,143 @@ export async function getNBASchedule() {
           });
         }
       }
-    }
-    
-    // Récupérer les 7 prochains jours
-    for (let i = 1; i <= 7; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-      
-      const response = await fetch(
-        `https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json`,
-        { next: { revalidate: 3600 } }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Parser le calendrier NBA (structure complexe)
-        // Pour l'instant on utilise mock data pour prochains matchs
-      }
-    }
-    
-    // Si pas assez de matchs, compléter avec mock data
-    if (matches.length < 10) {
-      return getMockFullWeekSchedule();
-    }
-    
-    return matches;
-    
-  } catch (error) {
-    console.error('NBA API Error:', error);
-    return getMockFullWeekSchedule();
-  }
-}
-
-// Mock data avec TOUS les matchs d'une semaine
-function getMockFullWeekSchedule() {
-  const today = new Date();
-  const matches = [];
-  
-  const teams = [
-    { code: 'LAL', name: 'Lakers' },
-    { code: 'GSW', name: 'Warriors' },
-    { code: 'BOS', name: 'Celtics' },
-    { code: 'MIA', name: 'Heat' },
-    { code: 'MIL', name: 'Bucks' },
-    { code: 'BKN', name: 'Nets' },
-    { code: 'DEN', name: 'Nuggets' },
-    { code: 'PHX', name: 'Suns' },
-    { code: 'DAL', name: 'Mavericks' },
-    { code: 'LAC', name: 'Clippers' },
-    { code: 'PHI', name: '76ers' },
-    { code: 'NYK', name: 'Knicks' },
-    { code: 'TOR', name: 'Raptors' },
-    { code: 'CHI', name: 'Bulls' },
-    { code: 'ATL', name: 'Hawks' },
-    { code: 'CLE', name: 'Cavaliers' },
-  ];
-  
-  // Dernière semaine - matchs complétés
-  for (let day = -7; day <= -1; day++) {
-    const matchDate = new Date(today);
-    matchDate.setDate(matchDate.getDate() + day);
-    const dateStr = matchDate.toISOString().split('T')[0];
-    
-    // 4-6 matchs par jour
-    const matchCount = Math.floor(Math.random() * 3) + 4;
-    for (let m = 0; m < matchCount; m++) {
-      const homeIdx = Math.floor(Math.random() * teams.length);
-      let awayIdx = Math.floor(Math.random() * teams.length);
-      while (awayIdx === homeIdx) {
-        awayIdx = Math.floor(Math.random() * teams.length);
-      }
-      
-      const homeScore = Math.floor(Math.random() * 30) + 95;
-      const awayScore = Math.floor(Math.random() * 30) + 95;
-      
-      matches.push({
-        id: `nba-past-${day}-${m}`,
-        date: dateStr,
-        time: `${18 + m}:00`,
-        homeTeam: teams[homeIdx].code,
-        awayTeam: teams[awayIdx].code,
-        homeTeamName: teams[homeIdx].name,
-        awayTeamName: teams[awayIdx].name,
-        homeScore,
-        awayScore,
-        status: 'completed',
-      });
+    } catch (e) {
+      console.error('Error fetching day:', e);
     }
   }
   
-  // Prochaine semaine - matchs à venir
-  for (let day = 0; day <= 7; day++) {
-    const matchDate = new Date(today);
-    matchDate.setDate(matchDate.getDate() + day);
-    const dateStr = matchDate.toISOString().split('T')[0];
-    
-    // 4-6 matchs par jour
-    const matchCount = Math.floor(Math.random() * 3) + 4;
-    for (let m = 0; m < matchCount; m++) {
-      const homeIdx = Math.floor(Math.random() * teams.length);
-      let awayIdx = Math.floor(Math.random() * teams.length);
-      while (awayIdx === homeIdx) {
-        awayIdx = Math.floor(Math.random() * teams.length);
-      }
-      
-      matches.push({
-        id: `nba-future-${day}-${m}`,
-        date: dateStr,
-        time: `${18 + m}:00`,
-        homeTeam: teams[homeIdx].code,
-        awayTeam: teams[awayIdx].code,
-        homeTeamName: teams[homeIdx].name,
-        awayTeamName: teams[awayIdx].name,
-        homeScore: null,
-        awayScore: null,
-        status: 'upcoming',
-      });
-    }
+  if (matches.length === 0) {
+    return getMockAllMatches();
   }
   
   return matches;
 }
 
-// Pour les autres sports (à développer)
+function getLastMatchPerTeam(completedMatches: any[]) {
+  const teamLastMatch: Record<string, any> = {};
+  
+  // Trier par date décroissante
+  const sorted = completedMatches.sort((a, b) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+  
+  sorted.forEach(match => {
+    // Pour l'équipe à domicile
+    if (!teamLastMatch[match.homeTeam]) {
+      teamLastMatch[match.homeTeam] = { ...match, perspective: 'home' };
+    }
+    // Pour l'équipe extérieure
+    if (!teamLastMatch[match.awayTeam]) {
+      teamLastMatch[match.awayTeam] = { ...match, perspective: 'away' };
+    }
+  });
+  
+  return Object.values(teamLastMatch);
+}
+
+function getNextMatchPerTeam(upcomingMatches: any[]) {
+  const teamNextMatch: Record<string, any> = {};
+  
+  // Trier par date croissante
+  const sorted = upcomingMatches.sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  
+  sorted.forEach(match => {
+    if (!teamNextMatch[match.homeTeam]) {
+      teamNextMatch[match.homeTeam] = { ...match, perspective: 'home' };
+    }
+    if (!teamNextMatch[match.awayTeam]) {
+      teamNextMatch[match.awayTeam] = { ...match, perspective: 'away' };
+    }
+  });
+  
+  return Object.values(teamNextMatch);
+}
+
+function getMockAllMatches() {
+  const teams = [
+    'LAL', 'GSW', 'BOS', 'MIA', 'MIL', 'BKN', 'DEN', 'PHX', 
+    'DAL', 'LAC', 'PHI', 'NYK', 'TOR', 'CHI', 'ATL', 'CLE',
+    'MEM', 'SAC', 'NOP', 'MIN', 'OKC', 'POR', 'UTA', 'SAS',
+    'HOU', 'ORL', 'WAS', 'DET', 'CHA', 'IND'
+  ];
+  
+  const teamNames: Record<string, string> = {
+    'LAL': 'Lakers', 'GSW': 'Warriors', 'BOS': 'Celtics', 'MIA': 'Heat',
+    'MIL': 'Bucks', 'BKN': 'Nets', 'DEN': 'Nuggets', 'PHX': 'Suns',
+    'DAL': 'Mavericks', 'LAC': 'Clippers', 'PHI': '76ers', 'NYK': 'Knicks',
+    'TOR': 'Raptors', 'CHI': 'Bulls', 'ATL': 'Hawks', 'CLE': 'Cavaliers',
+    'MEM': 'Grizzlies', 'SAC': 'Kings', 'NOP': 'Pelicans', 'MIN': 'Timberwolves',
+    'OKC': 'Thunder', 'POR': 'Trail Blazers', 'UTA': 'Jazz', 'SAS': 'Spurs',
+    'HOU': 'Rockets', 'ORL': 'Magic', 'WAS': 'Wizards', 'DET': 'Pistons',
+    'CHA': 'Hornets', 'IND': 'Pacers'
+  };
+  
+  const matches = [];
+  
+  // Créer un match passé pour chaque équipe (15 matchs = 30 équipes)
+  for (let i = 0; i < 15; i++) {
+    const home = teams[i * 2];
+    const away = teams[i * 2 + 1];
+    const homeScore = Math.floor(Math.random() * 30) + 95;
+    const awayScore = Math.floor(Math.random() * 30) + 95;
+    
+    matches.push({
+      id: `past-${i}`,
+      date: new Date(Date.now() - (Math.random() * 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      homeTeam: home,
+      awayTeam: away,
+      homeTeamName: teamNames[home],
+      awayTeamName: teamNames[away],
+      homeScore,
+      awayScore,
+      status: 'completed',
+    });
+  }
+  
+  // Créer un match futur pour chaque équipe
+  for (let i = 0; i < 15; i++) {
+    const home = teams[i * 2];
+    const away = teams[i * 2 + 1];
+    
+    matches.push({
+      id: `future-${i}`,
+      date: new Date(Date.now() + (Math.random() * 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      homeTeam: home,
+      awayTeam: away,
+      homeTeamName: teamNames[home],
+      awayTeamName: teamNames[away],
+      homeScore: null,
+      awayScore: null,
+      status: 'upcoming',
+    });
+  }
+  
+  return matches;
+}
+
+function getMockScheduleByTeam() {
+  const allMatches = getMockAllMatches();
+  return {
+    recent: getLastMatchPerTeam(allMatches.filter(m => m.status === 'completed')),
+    upcoming: getNextMatchPerTeam(allMatches.filter(m => m.status === 'upcoming'))
+  };
+}
+
 export async function getNFLSchedule() {
-  // TODO: ESPN API
-  return [];
+  // TODO
+  return { recent: [], upcoming: [] };
 }
 
 export async function getMLBSchedule() {
-  return [];
+  return { recent: [], upcoming: [] };
 }
 
 export async function getNHLSchedule() {
-  return [];
+  return { recent: [], upcoming: [] };
 }
 
 export async function getSoccerSchedule() {
-  return [];
+  return { recent: [], upcoming: [] };
 }

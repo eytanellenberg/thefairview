@@ -6,27 +6,10 @@ import SportPageClient from './SportPageClient';
 export default async function SportPage({ params }: { params: { sport: string } }) {
   const { sport } = params;
   
-  // Fetch real data based on sport
-  let matches = [];
+  let schedule = { recent: [], upcoming: [] };
   
   if (sport === 'nba') {
-    matches = await getNBASchedule();
-  } else {
-    // Mock data for other sports for now
-    matches = [
-      {
-        id: `${sport}-1`,
-        date: new Date().toISOString().split('T')[0],
-        time: '19:00',
-        homeTeam: 'Team A',
-        awayTeam: 'Team B',
-        homeTeamName: 'Team A',
-        awayTeamName: 'Team B',
-        homeScore: 3,
-        awayScore: 1,
-        status: 'completed'
-      }
-    ];
+    schedule = await getNBASchedule();
   }
 
   return (
@@ -41,7 +24,7 @@ export default async function SportPage({ params }: { params: { sport: string } 
         </div>
       </header>
       
-      <SportPageClient sport={sport} matches={matches} />
+      <SportPageClient sport={sport} recentMatches={schedule.recent} upcomingMatches={schedule.upcoming} />
     </div>
   );
 }
