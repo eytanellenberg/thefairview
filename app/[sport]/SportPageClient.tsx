@@ -71,12 +71,12 @@ export default function SportPageClient({ sport, matches }: any) {
       <div className="bg-white rounded-xl p-6 card-shadow mb-8">
         <h2 className="text-xl font-bold mb-4 flex items-center">
           <Calendar className="w-5 h-5 mr-2" />
-          Vrais Matchs {sport.toUpperCase()}
+          Select Match
         </h2>
         
         {pastMatches.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-600 mb-3">DERNIÈRE JOURNÉE (PAI disponible)</h3>
+            <h3 className="text-sm font-semibold text-gray-600 mb-3">RECENT MATCHES</h3>
             <div className="space-y-2">
               {pastMatches.map((match: any) => (
                 <button
@@ -99,8 +99,7 @@ export default function SportPageClient({ sport, matches }: any) {
                     </div>
                     <div className="ml-4 text-right">
                       <div className="text-sm text-gray-600">{match.date}</div>
-                      <div className="text-sm text-gray-600">{match.time}</div>
-                      <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mt-1">RAI + PAI</div>
+                      <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mt-1">PAI Available</div>
                     </div>
                   </div>
                 </button>
@@ -111,7 +110,7 @@ export default function SportPageClient({ sport, matches }: any) {
 
         {upcomingMatches.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-600 mb-3">PROCHAINE JOURNÉE (RAI seulement)</h3>
+            <h3 className="text-sm font-semibold text-gray-600 mb-3">UPCOMING MATCHES</h3>
             <div className="space-y-2">
               {upcomingMatches.map((match: any) => (
                 <button
@@ -129,8 +128,7 @@ export default function SportPageClient({ sport, matches }: any) {
                     </div>
                     <div className="ml-4 text-right">
                       <div className="text-sm text-gray-600">{match.date}</div>
-                      <div className="text-sm text-gray-600">{match.time}</div>
-                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mt-1">RAI only</div>
+                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mt-1">RAI Available</div>
                     </div>
                   </div>
                 </button>
@@ -146,13 +144,15 @@ export default function SportPageClient({ sport, matches }: any) {
             <div className="flex justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold">
-                  {selectedMatch.homeTeamName || selectedMatch.homeTeam} vs {selectedMatch.awayTeamName || selectedMatch.awayTeam} - PAI
+                  {selectedMatch.homeTeamName || selectedMatch.homeTeam} vs {selectedMatch.awayTeamName || selectedMatch.awayTeam}
                 </h2>
-                <p className="text-gray-600">{selectedMatch.date} • Score: {selectedMatch.homeScore}-{selectedMatch.awayScore}</p>
+                <p className="text-gray-600">Post-Match Performance Analysis • {selectedMatch.date}</p>
+                <p className="text-sm text-gray-500">Final Score: {selectedMatch.homeScore}-{selectedMatch.awayScore}</p>
               </div>
               <div className="text-right">
                 <div className="text-5xl font-bold text-blue-600">{mockPAI.overall}</div>
-                <p className="text-sm text-gray-600">Concordance: {mockPAI.concordance}%</p>
+                <p className="text-sm text-gray-600">PAI Score</p>
+                <p className="text-xs text-gray-500 mt-1">Concordance: {mockPAI.concordance}%</p>
               </div>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
@@ -179,13 +179,14 @@ export default function SportPageClient({ sport, matches }: any) {
             <div className="flex justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold">
-                  {selectedMatch.homeTeamName || selectedMatch.homeTeam} vs {selectedMatch.awayTeamName || selectedMatch.awayTeam} - RAI
+                  {selectedMatch.homeTeamName || selectedMatch.homeTeam} vs {selectedMatch.awayTeamName || selectedMatch.awayTeam}
                 </h2>
-                <p className="text-gray-600">{selectedMatch.date} • {selectedMatch.time}</p>
+                <p className="text-gray-600">Pre-Match Readiness Analysis • {selectedMatch.date}</p>
               </div>
               <div className="text-right">
                 <div className="text-5xl font-bold text-green-600">{mockRAI.overall}</div>
-                <p className="text-sm text-gray-600">Confidence: {mockRAI.confidence}%</p>
+                <p className="text-sm text-gray-600">RAI Score</p>
+                <p className="text-xs text-gray-500 mt-1">Confidence: {mockRAI.confidence}%</p>
               </div>
             </div>
             <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
@@ -212,7 +213,7 @@ export default function SportPageClient({ sport, matches }: any) {
 
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8 mt-8">
         <h3 className="text-xl font-bold mb-2">Want Deeper Insights?</h3>
-        <p className="mb-4">Premium gets all levers, advanced patterns, historical data</p>
+        <p className="mb-4">Premium gets all levers, advanced patterns, and historical data</p>
         <Link href="/premium" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg">
           Explore Premium
         </Link>
@@ -230,7 +231,7 @@ function LeverCard({ lever, index }: any) {
             <span className="text-2xl font-bold text-gray-400">#{index + 1}</span>
             <h4 className="text-lg font-bold">{lever.name}</h4>
           </div>
-          <span className="inline-block px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+          <span className="inline-block px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800 capitalize">
             {lever.category}
           </span>
         </div>
