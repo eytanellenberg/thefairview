@@ -68,7 +68,7 @@ export async function fetchGameDetails(gameId: string): Promise<ESPNGameDetails 
     return MOCK_GAME_DETAILS[gameId as keyof typeof MOCK_GAME_DETAILS] as ESPNGameDetails;
   }
   try {
-    const response = await fetch(`${ESPN_NBA_API}/summary?event=${gameId}`);
+   const response = await fetch(`${ESPN_NBA_API}/summary?event=${gameId}`);
     if (!response.ok) throw new Error('ESPN game details failed');
     const data = await response.json();
     const competition = data.boxscore?.teams || [];
