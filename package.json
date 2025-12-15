@@ -1,6 +1,6 @@
 {
-  "name": "thefairview",
-  "version": "0.1.0",
+  "name": "thefairview-v2",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,21 +9,17 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.2.23",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "lucide-react": "0.263.1",
-    "stripe": "^17.5.0",
-    "@stripe/stripe-js": "^4.10.0",
-    "@supabase/supabase-js": "^2.47.10"
+    "next": "^14.2.18",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "typescript": "^5",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
-    "autoprefixer": "^10",
-    "postcss": "^8"
+    "typescript": "^5"
   }
 }
