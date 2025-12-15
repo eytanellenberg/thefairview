@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchGameDetails, parseTeamStats, fetchTeamSchedule, calculateDaysRest, fetchTeamInjuries } from '@/app/lib/espn-api';
+import { fetchGameDetails, fetchTeamRecentGames, parseTeamStatsToFair } from '@/app/lib/balldontlie-api';
 import { mapESPNToFair } from '@/app/lib/espn-mapper';
 import { calculateRAI } from '@/app/lib/fair-core';
 
