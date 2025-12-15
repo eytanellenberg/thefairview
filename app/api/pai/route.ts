@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchGameDetails, parseTeamStats } from '@/app/lib/espn-api';
+import { fetchGameDetails, fetchTeamRecentGames, parseTeamStatsToFair } from '@/app/lib/balldontlie-api';
 import { mapESPNToFair } from '@/app/lib/espn-mapper';
 import { calculatePAI } from '@/app/lib/fair-core';
 
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   }
   
   try {
+    // Fetch game details
     const gameDetails = await fetchGameDetails(gameId);
     if (!gameDetails) {
       return NextResponse.json(
@@ -31,31 +32,30 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Determine which team
     const isHome = gameDetails.homeTeam.id === teamId;
     const team = isHome ? gameDetails.homeTeam : gameDetails.awayTeam;
     const opponent = isHome ? gameDetails.awayTeam : gameDetails.homeTeam;
     
-    const matchStats = parseTeamStats(team.stats);
+    // Fetch team's recent games for win streak calculation
+    const recentGames = await fetchTeamRecentGames(teamId);
     
-    const espnStats = {
-      ...matchStats,
-      days_rest: 2,
-      is_back_to_back: false,
-      injury_count: 1,
-      minutes_played_avg: 35.0,
-      win_streak: 0,
-      is_home: isHome,
-      last_5_wins: 3,
-    };
+    // Parse ACTUAL match stats
+    const espnStats = parseTeamStatsToFair(team.stats, teamId, isHome, recentGames);
     
+    // Map to FAIR inputs
     const fairInputs = mapESPNToFair(espnStats);
+    
+    // Calculate PAI
     const paiOutput = calculatePAI(fairInputs);
     
+    // Also fetch RAI for comparison
     const raiResponse = await fetch(
       `${request.nextUrl.origin}/api/rai?gameId=${gameId}&teamId=${teamId}`
     );
     const raiData = await raiResponse.json();
     
+    // Calculate difference
     const raiScore = raiData.rai?.rai_score || 0;
     const paiScore = paiOutput.rai_score;
     const difference = paiScore - raiScore;
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('PAI calculation error:', error);
     return NextResponse.json(
-      { error: 'Failed to calculate PAI' },
+      { error: 'Failed to calculate PAI', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
