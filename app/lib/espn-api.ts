@@ -118,3 +118,15 @@ export function parseTeamStats(rawStats: any[]): any {
     blocks: stats.blocks || 0,
   };
 }
+
+export async function fetchTeamSchedule(teamId: string): Promise<any[]> {
+  return [];
+}
+
+export function calculateDaysRest(schedule: any[], gameDate: string): number {
+  return 2;
+}
+
+export async function fetchTeamInjuries(teamId: string): Promise<number> {
+  return 1;
+}
