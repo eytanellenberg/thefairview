@@ -129,4 +129,4 @@ export function calculateDaysRest(schedule: any[], gameDate: string): number {
 
 export async function fetchTeamInjuries(teamId: string): Promise<number> {
   return 1;
-}
+} 
