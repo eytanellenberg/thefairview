@@ -1,10 +1,3 @@
-bash
-
-cat /home/claude/thefairview-v2/app/lib/mock-data.ts
-Output
-
-// Mock ESPN data for testing without network access
-
 export const MOCK_GAMES = [
   {
     id: '401704855',
