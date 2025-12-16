@@ -1,36 +1,40 @@
-export type LeverStatus = "as_expected" | "stronger" | "weaker" | "NEW";
-
-export interface LeverWithImpact {
+export type Lever = {
   lever: string;
   contribution: number;
   rationale: string;
-}
+};
 
-export interface LeverWithStatus extends LeverWithImpact {
-  status: LeverStatus;
-  delta: number; // observed - expected
-}
+export type LeverWithStatus = Lever & {
+  status: "stronger_than_expected" | "weaker_than_expected" | "as_expected" | "NEW";
+};
 
 export function computeLeverDelta(
-  expectedLevers: LeverWithImpact[],
-  observedLevers: LeverWithImpact[],
-  threshold = 3 // small neutral zone
+  expected: Lever[],
+  observed: Lever[]
 ): LeverWithStatus[] {
-  const expectedMap = new Map(expectedLevers.map(l => [l.lever, l]));
+  const expectedMap = new Map(
+    expected.map(l => [l.lever, l.contribution])
+  );
 
-  return observedLevers.map(obs => {
-    const exp = expectedMap.get(obs.lever);
-
-    if (!exp) {
-      return { ...obs, status: "NEW", delta: 0 };
+  return observed.map(l => {
+    if (!expectedMap.has(l.lever)) {
+      return {
+        ...l,
+        status: "NEW"
+      };
     }
 
-    const delta = obs.contribution - exp.contribution;
+    const expectedValue = expectedMap.get(l.lever)!;
+    const diff = l.contribution - expectedValue;
 
-    let status: LeverStatus = "as_expected";
-    if (delta > threshold) status = "stronger";
-    else if (delta < -threshold) status = "weaker";
+    let status: LeverWithStatus["status"] = "as_expected";
 
-    return { ...obs, status, delta };
+    if (diff >= 5) status = "stronger_than_expected";
+    else if (diff <= -5) status = "weaker_than_expected";
+
+    return {
+      ...l,
+      status
+    };
   });
 }
