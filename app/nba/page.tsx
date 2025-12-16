@@ -201,7 +201,7 @@ export default async function NBAPage() {
         </section>
 
         <footer className="text-xs text-gray-500 pt-8 border-t">
-          FAIR — structure over narrative · contact@thefairview.com
+          FAIR — structure over narrative · eytan_ellenberg@yahoo.fr
         </footer>
       </div>
     </main>
