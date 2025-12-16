@@ -1,26 +1,16 @@
-export const revalidate = 6 * 60 * 60; // 6 hours
+import { buildNBASnapshot } from "@/lib/nbaSnapshot";
 
-async function getSnapshot() {
-  const res = await fetch("/api/nba/snapshot", {
-    next: { revalidate: 6 * 60 * 60 }
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to load NBA snapshot");
-  }
-
-  return res.json();
-}
+export const revalidate = 6 * 60 * 60; // 6h
 
 export default async function NBAPage() {
-  const data = await getSnapshot();
+  const data = await buildNBASnapshot();
 
   return (
     <main className="max-w-7xl mx-auto p-6 space-y-10">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold">NBA — FAIR Engine</h1>
         <p className="text-gray-600">
-          Static snapshot · Updated periodically · FAIR-Sport attribution
+          Static snapshot · FAIR-Sport causal attribution
         </p>
         <p className="text-xs text-gray-400">
           Last update: {new Date(data.updatedAt).toLocaleString()}
@@ -35,13 +25,11 @@ export default async function NBAPage() {
           >
             <h2 className="text-xl font-semibold">{item.team.name}</h2>
 
-            {/* POST-GAME — PAI */}
             {item.pai && (
-              <section className="space-y-2">
+              <section>
                 <h3 className="font-semibold text-red-600">
                   Observed impact (PAI)
                 </h3>
-
                 {item.lastGame && (
                   <div className="text-sm text-gray-700">
                     {item.lastGame.home.name}{" "}
@@ -50,56 +38,35 @@ export default async function NBAPage() {
                     {item.lastGame.away.name}
                   </div>
                 )}
-
-                <div className="text-lg font-bold">
-                  PAI: {item.pai.value}
-                </div>
-
-                <ul className="text-sm space-y-1">
+                <div className="font-bold">PAI: {item.pai.value}</div>
+                <ul className="text-sm">
                   {item.pai.topLevers.map((l: any, i: number) => (
                     <li key={i}>
-                      <strong>
-                        {l.contribution > 0 ? "+" : ""}
-                        {l.contribution}
-                      </strong>{" "}
+                      <strong>{l.contribution > 0 ? "+" : ""}{l.contribution}</strong>{" "}
                       {l.lever}
-                      <div className="text-xs text-gray-500">
-                        {l.rationale}
-                      </div>
+                      <div className="text-xs text-gray-500">{l.rationale}</div>
                     </li>
                   ))}
                 </ul>
               </section>
             )}
 
-            {/* PRE-GAME — RAI */}
-            <section className="space-y-2">
+            <section>
               <h3 className="font-semibold text-blue-600">
                 Predicted readiness (RAI)
               </h3>
-
               {item.nextGame && (
                 <div className="text-sm text-gray-700">
-                  {item.nextGame.home.name} vs{" "}
-                  {item.nextGame.away.name}
+                  {item.nextGame.home.name} vs {item.nextGame.away.name}
                 </div>
               )}
-
-              <div className="text-lg font-bold">
-                RAI: {item.rai.value}
-              </div>
-
-              <ul className="text-sm space-y-1">
+              <div className="font-bold">RAI: {item.rai.value}</div>
+              <ul className="text-sm">
                 {item.rai.topLevers.map((l: any, i: number) => (
                   <li key={i}>
-                    <strong>
-                      {l.contribution > 0 ? "+" : ""}
-                      {l.contribution}
-                    </strong>{" "}
+                    <strong>{l.contribution > 0 ? "+" : ""}{l.contribution}</strong>{" "}
                     {l.lever}
-                    <div className="text-xs text-gray-500">
-                      {l.rationale}
-                    </div>
+                    <div className="text-xs text-gray-500">{l.rationale}</div>
                   </li>
                 ))}
               </ul>
@@ -109,9 +76,9 @@ export default async function NBAPage() {
       </div>
 
       <footer className="text-sm text-gray-500 max-w-4xl">
-        RAI is computed pre-game using structural FAIR-Sport predictors.
-        PAI decomposes observed execution post-game.
-        Club data integration enables higher-resolution attribution.
+        RAI = pre-game structural readiness.  
+        PAI = post-game observed execution.  
+        Club data integration enables higher-resolution FAIR attribution.
       </footer>
     </main>
   );
