@@ -30,9 +30,11 @@ function normalize(event: any): GameSummary | null {
 
   const t = event.status?.type?.name?.toLowerCase() ?? "";
   const status =
-    t.includes("final") ? "final" :
-    t.includes("in") ? "in_progress" :
-    "scheduled";
+    t.includes("final")
+      ? "final"
+      : t.includes("in")
+      ? "in_progress"
+      : "scheduled";
 
   return {
     gameId: event.id,
@@ -56,12 +58,30 @@ export async function getLastAndNextGame(
   sport: "nba" | "nfl" | "mlb",
   teamId: string
 ) {
-  const url = `${ESPN_BASE}/${sportPath(sport)}/teams/${teamId}/schedule`;
-  const data = await fetchJSON(url);
+  const currentYear = new Date().getFullYear();
+  const yearsToTry = [currentYear, currentYear - 1];
 
-  const games = (data.events ?? [])
-    .map(normalize)
-    .filter(Boolean) as GameSummary[];
+  let allGames: GameSummary[] = [];
+
+  for (const year of yearsToTry) {
+    const url = `${ESPN_BASE}/${sportPath(sport)}/teams/${teamId}/schedule?season=${year}`;
+    try {
+      const data = await fetchJSON(url);
+      const games = (data.events ?? [])
+        .map(normalize)
+        .filter(Boolean) as GameSummary[];
+      allGames = allGames.concat(games);
+    } catch {
+      // ignore season fetch errors
+    }
+  }
+
+  // Deduplicate by gameId
+  const map = new Map<string, GameSummary>();
+  for (const g of allGames) {
+    map.set(g.gameId, g);
+  }
+  const games = Array.from(map.values());
 
   const last = games
     .filter(g => g.status === "final")
