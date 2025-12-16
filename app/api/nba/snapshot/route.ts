@@ -3,9 +3,8 @@ import { NBA_TEAMS } from "@/lib/data/nbaTeams";
 import { getLastAndNextGame } from "@/lib/providers/espn";
 
 /**
- * NBA Snapshot
- * Updated periodically (ISR)
- * FAIR-Sport static view
+ * NBA FAIR-Sport snapshot
+ * Static view updated periodically (ISR)
  */
 
 export const revalidate = 6 * 60 * 60; // 6 hours
@@ -22,28 +21,32 @@ export async function GET() {
         lastGame: last,
         nextGame: next,
 
-        // FAIR-Sport proxies (static snapshot)
+        // ---- RAI (PRE-GAME) — FAIR-Sport structural predictors
         rai: {
           value: 54,
           topLevers: [
             {
               lever: "Offensive spacing coherence",
               contribution: 14,
-              rationale: "Stable role distribution and half-court structure"
+              rationale:
+                "Stable role distribution and half-court spacing structure"
             },
             {
               lever: "Defensive scheme continuity",
               contribution: 9,
-              rationale: "Limited tactical volatility in recent games"
+              rationale:
+                "Low tactical variability across recent games"
             },
             {
               lever: "PnR matchup stress",
               contribution: -11,
-              rationale: "Opponent PnR profile induces coverage strain"
+              rationale:
+                "Opponent pick-and-roll profile induces coverage strain"
             }
           ]
         },
 
+        // ---- PAI (POST-GAME) — FAIR-Sport observed execution
         pai: last
           ? {
               value: 40,
@@ -51,30 +54,33 @@ export async function GET() {
                 {
                   lever: "Half-court execution efficiency",
                   contribution: -18,
-                  rationale: "Set execution degraded under pressure"
+                  rationale:
+                    "Set execution degraded under defensive pressure"
                 },
                 {
                   lever: "Defensive rotation latency",
                   contribution: -12,
-                  rationale: "Late help and close-outs observed"
+                  rationale:
+                    "Late help and close-outs observed repeatedly"
                 },
                 {
                   lever: "Shot quality creation",
                   contribution: 7,
-                  rationale: "Shot profile remained acceptable"
+                  rationale:
+                    "Shot profile remained acceptable despite breakdowns"
                 }
               ]
             }
           : null
       });
     } catch {
-      // skip team on error
+      // silently skip team on error
     }
   }
 
   return NextResponse.json({
-    updatedAt: new Date().toISOString(),
     sport: "NBA",
+    updatedAt: new Date().toISOString(),
     snapshot
   });
 }
