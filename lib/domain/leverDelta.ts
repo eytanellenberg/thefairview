@@ -1,78 +1,36 @@
-import { NBALever } from "./nbaLevers";
-
-export type LeverStatus =
-  | "expected"   // conforme à l’attente
-  | "stronger"   // plus fort que prévu
-  | "weaker"     // plus faible que prévu
-  | "new";       // non prioritaire pré-game, devenu déterminant
+export type LeverStatus = "as_expected" | "stronger" | "weaker" | "NEW";
 
 export interface LeverWithImpact {
-  lever: string;        // label (doit exister dans nbaLevers)
+  lever: string;
   contribution: number;
   rationale: string;
 }
 
 export interface LeverWithStatus extends LeverWithImpact {
   status: LeverStatus;
+  delta: number; // observed - expected
 }
 
-/**
- * computeLeverDelta
- * -----------------
- * Compare expected (RAI) and observed (PAI) top levers
- * and assigns a structural status to each observed lever.
- *
- * RULES (FIXED):
- * 1. Lever ∈ expected AND ∈ observed
- *    → expected / stronger / weaker (based on sign)
- *
- * 2. Lever ∉ expected AND ∈ observed
- *    → new
- *
- * NOTE:
- * - We do NOT invent levers
- * - We do NOT change rankings
- * - We only qualify deviation vs expectation
- */
 export function computeLeverDelta(
   expectedLevers: LeverWithImpact[],
-  observedLevers: LeverWithImpact[]
+  observedLevers: LeverWithImpact[],
+  threshold = 3 // small neutral zone
 ): LeverWithStatus[] {
-  const expectedMap = new Map(
-    expectedLevers.map(l => [l.lever, l])
-  );
+  const expectedMap = new Map(expectedLevers.map(l => [l.lever, l]));
 
-  return observedLevers.map(observed => {
-    const expected = expectedMap.get(observed.lever);
+  return observedLevers.map(obs => {
+    const exp = expectedMap.get(obs.lever);
 
-    // CASE 3 — NEW lever (not prioritized pre-game)
-    if (!expected) {
-      return {
-        ...observed,
-        status: "new"
-      };
+    if (!exp) {
+      return { ...obs, status: "NEW", delta: 0 };
     }
 
-    // CASE 1 & 2 — Lever was expected
-    // Sign-based deviation (simple, robust, explainable)
-    if (observed.contribution < 0) {
-      return {
-        ...observed,
-        status: "weaker"
-      };
-    }
+    const delta = obs.contribution - exp.contribution;
 
-    if (observed.contribution > 0) {
-      return {
-        ...observed,
-        status: "stronger"
-      };
-    }
+    let status: LeverStatus = "as_expected";
+    if (delta > threshold) status = "stronger";
+    else if (delta < -threshold) status = "weaker";
 
-    // Neutral / unchanged
-    return {
-      ...observed,
-      status: "expected"
-    };
+    return { ...obs, status, delta };
   });
 }
