@@ -11,6 +11,9 @@ export async function buildNBASnapshot() {
       snapshot.push({
         team,
 
+        // --------------------
+        // LAST GAME
+        // --------------------
         lastGame: last
           ? {
               dateUtc: last.dateUtc,
@@ -21,21 +24,34 @@ export async function buildNBASnapshot() {
               opponent:
                 last.home.id === team.id
                   ? last.away.name
-                  : last.home.name
+                  : last.home.name,
+              opponentId:
+                last.home.id === team.id
+                  ? last.away.id
+                  : last.home.id
             }
           : null,
 
+        // --------------------
+        // NEXT GAME
+        // --------------------
         nextGame: next
           ? {
               dateUtc: next.dateUtc,
               opponent:
                 next.home.id === team.id
                   ? next.away.name
-                  : next.home.name
+                  : next.home.name,
+              opponentId:
+                next.home.id === team.id
+                  ? next.away.id
+                  : next.home.id
             }
           : null,
 
-        // 🔴 POSTGAME — PAI
+        // --------------------
+        // POSTGAME — PAI
+        // --------------------
         comparativePAI: last
           ? {
               value: 48,
@@ -62,7 +78,9 @@ export async function buildNBASnapshot() {
             }
           : null,
 
-        // 🔵 PREGAME — RAI
+        // --------------------
+        // PREGAME — RAI
+        // --------------------
         comparativeRAI: next
           ? {
               value: 52,
