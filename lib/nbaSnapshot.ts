@@ -1,5 +1,6 @@
 import { NBA_TEAMS } from "@/lib/data/nbaTeams";
 import { getLastAndNextGame } from "@/lib/providers/espn";
+import { computeLeverDelta } from "@/lib/domain/leverDelta";
 
 export async function buildNBASnapshot() {
   const snapshot: any[] = [];
@@ -7,6 +8,58 @@ export async function buildNBASnapshot() {
   for (const team of NBA_TEAMS) {
     try {
       const { last, next } = await getLastAndNextGame("nba", team.id);
+
+      // --------------------
+      // RAI — PREGAME LEVERS
+      // --------------------
+      const expectedLevers = next
+        ? [
+            {
+              lever: "Offensive spacing coherence",
+              contribution: 14,
+              rationale:
+                "Stable role distribution and half-court spacing structure"
+            },
+            {
+              lever: "Defensive scheme continuity",
+              contribution: 9,
+              rationale:
+                "Low tactical variability across recent games"
+            },
+            {
+              lever: "PnR matchup stress",
+              contribution: -11,
+              rationale:
+                "Opponent pick-and-roll profile induces coverage strain"
+            }
+          ]
+        : null;
+
+      // --------------------
+      // PAI — OBSERVED LEVERS
+      // --------------------
+      const observedLevers = last
+        ? [
+            {
+              lever: "Offensive spacing coherence",
+              contribution: -6,
+              rationale:
+                "Observed execution relative to pre-game structural expectation"
+            },
+            {
+              lever: "Defensive scheme continuity",
+              contribution: -2,
+              rationale:
+                "Observed execution relative to pre-game structural expectation"
+            },
+            {
+              lever: "PnR matchup stress",
+              contribution: 1,
+              rationale:
+                "Observed execution relative to pre-game structural expectation"
+            }
+          ]
+        : null;
 
       snapshot.push({
         team,
@@ -50,62 +103,28 @@ export async function buildNBASnapshot() {
           : null,
 
         // --------------------
-        // POSTGAME — PAI
+        // COMPARATIVE RAI
         // --------------------
-        comparativePAI: last
+        comparativeRAI: expectedLevers
           ? {
-              value: 48,
-              observedLevers: [
-                {
-                  lever: "Offensive spacing coherence",
-                  contribution: -6,
-                  rationale:
-                    "Observed execution relative to pre-game structural expectation"
-                },
-                {
-                  lever: "Defensive scheme continuity",
-                  contribution: -2,
-                  rationale:
-                    "Observed execution relative to pre-game structural expectation"
-                },
-                {
-                  lever: "PnR matchup stress",
-                  contribution: 1,
-                  rationale:
-                    "Observed execution relative to pre-game structural expectation"
-                }
-              ]
+              value: 52,
+              expectedLevers
             }
           : null,
 
         // --------------------
-        // PREGAME — RAI
+        // COMPARATIVE PAI (VS RAI)
         // --------------------
-        comparativeRAI: next
-          ? {
-              value: 52,
-              expectedLevers: [
-                {
-                  lever: "Offensive spacing coherence",
-                  contribution: 14,
-                  rationale:
-                    "Stable role distribution and half-court spacing structure"
-                },
-                {
-                  lever: "Defensive scheme continuity",
-                  contribution: 9,
-                  rationale:
-                    "Low tactical variability across recent games"
-                },
-                {
-                  lever: "PnR matchup stress",
-                  contribution: -11,
-                  rationale:
-                    "Opponent pick-and-roll profile induces coverage strain"
-                }
-              ]
-            }
-          : null
+        comparativePAI:
+          expectedLevers && observedLevers
+            ? {
+                value: 48,
+                observedLevers: computeLeverDelta(
+                  expectedLevers,
+                  observedLevers
+                )
+              }
+            : null
       });
     } catch {
       // skip team on ESPN error
