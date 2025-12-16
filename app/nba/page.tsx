@@ -33,17 +33,11 @@ export default async function NBAPage() {
       </h1>
 
       <p className="text-sm text-gray-600 mb-6">
-        One card per match. Post-game execution (PAI) explains what happened.
-        Pre-game readiness (RAI) explains what was expected.
+        One card per match. Pre-game readiness (RAI) explains what was expected.
+        Post-game execution (PAI) explains what happened.
       </p>
 
       <h2 className="text-lg font-semibold mb-4">Played matches</h2>
-
-      {playedMatches.length === 0 && (
-        <p className="text-sm text-gray-500">
-          No completed matches available.
-        </p>
-      )}
 
       {playedMatches.map((match, index) => {
         const teamA = match[0];
@@ -54,6 +48,7 @@ export default async function NBAPage() {
             key={index}
             className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
           >
+            {/* Match header */}
             <h3 className="font-medium mb-1">
               {teamA.team.name} vs {teamB.team.name}
             </h3>
@@ -62,23 +57,47 @@ export default async function NBAPage() {
               Final score: {teamA.lastGame.score}
             </p>
 
-            {[teamA, teamB].map((t, j) => (
-              <div key={j} className="mb-3">
-                <strong>{t.team.name}</strong> — PAI
-                <ul className="list-disc ml-5 text-sm mt-1">
-                  {t.comparativePAI?.levers.map(
-                    (l: any, k: number) => (
-                      <li key={k}>
-                        {l.lever} — {l.status}
-                      </li>
-                    )
-                  )}
-                </ul>
-              </div>
-            ))}
+            {/* 🔵 RAI BLOCK */}
+            <div className="mb-4">
+              <h4 className="font-semibold text-sm mb-1">
+                Pregame — Comparative Readiness (RAI)
+              </h4>
+              <p className="text-sm mb-1">
+                RAI edge: <strong>{teamA.comparativeRAI.edgeTeam} +{teamA.comparativeRAI.delta}</strong>
+              </p>
+              <ul className="list-disc ml-5 text-sm">
+                {teamA.comparativeRAI.levers.map((l: any, i: number) => (
+                  <li key={i}>
+                    {l.lever}: {l.advantage} +{l.value}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 🔴 PAI BLOCK */}
+            <div className="mb-2">
+              <h4 className="font-semibold text-sm mb-1">
+                Postgame — Comparative Execution (PAI)
+              </h4>
+
+              {[teamA, teamB].map((t: any, j: number) => (
+                <div key={j} className="mb-2">
+                  <strong>{t.team.name}</strong>
+                  <ul className="list-disc ml-5 text-sm">
+                    {t.comparativePAI.levers.map(
+                      (l: any, k: number) => (
+                        <li key={k}>
+                          {l.lever}: {l.status}
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              ))}
+            </div>
 
             <p className="text-sm italic text-gray-600">
-              {teamA.comparativePAI?.conclusion}
+              {teamA.comparativePAI.conclusion}
             </p>
           </div>
         );
@@ -89,4 +108,4 @@ export default async function NBAPage() {
       </footer>
     </main>
   );
-                        }
+}
