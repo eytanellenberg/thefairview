@@ -57,24 +57,31 @@ export default async function NBAPage() {
               Final score: {teamA.lastGame.score}
             </p>
 
-            {/* 🔵 RAI BLOCK */}
+            {/* 🔵 RAI */}
             <div className="mb-4">
               <h4 className="font-semibold text-sm mb-1">
                 Pregame — Comparative Readiness (RAI)
               </h4>
+
               <p className="text-sm mb-1">
-                RAI edge: <strong>{teamA.comparativeRAI.edgeTeam} +{teamA.comparativeRAI.delta}</strong>
+                RAI edge:{" "}
+                <strong>
+                  {teamA.comparativeRAI.edgeTeam} +{teamA.comparativeRAI.delta}
+                </strong>
               </p>
+
               <ul className="list-disc ml-5 text-sm">
-                {teamA.comparativeRAI.levers.map((l: any, i: number) => (
-                  <li key={i}>
-                    {l.lever}: {l.advantage} +{l.value}
-                  </li>
-                ))}
+                {teamA.comparativeRAI.levers.map(
+                  (l: any, i: number) => (
+                    <li key={i}>
+                      {l.lever}: {l.advantage} +{l.value}
+                    </li>
+                  )
+                )}
               </ul>
             </div>
 
-            {/* 🔴 PAI BLOCK */}
+            {/* 🔴 PAI */}
             <div className="mb-2">
               <h4 className="font-semibold text-sm mb-1">
                 Postgame — Comparative Execution (PAI)
