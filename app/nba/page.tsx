@@ -19,11 +19,12 @@ export default async function NBAPage() {
     );
 
     if (!matches[key]) matches[key] = [];
-
     matches[key].push(entry);
   }
 
-  const playedMatches = Object.values(matches).filter(m => m.length === 2);
+  const playedMatches = Object.values(matches).filter(
+    (m) => m.length === 2
+  );
 
   return (
     <main className="p-6 max-w-5xl mx-auto text-gray-900 bg-white">
@@ -44,6 +45,48 @@ export default async function NBAPage() {
         </p>
       )}
 
-      {playedMatches.map((match, i) => {
+      {playedMatches.map((match, index) => {
         const teamA = match[0];
-        const team
+        const teamB = match[1];
+
+        return (
+          <div
+            key={index}
+            className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
+          >
+            <h3 className="font-medium mb-1">
+              {teamA.team.name} vs {teamB.team.name}
+            </h3>
+
+            <p className="text-sm mb-3">
+              Final score: {teamA.lastGame.score}
+            </p>
+
+            {[teamA, teamB].map((t, j) => (
+              <div key={j} className="mb-3">
+                <strong>{t.team.name}</strong> — PAI
+                <ul className="list-disc ml-5 text-sm mt-1">
+                  {t.comparativePAI?.levers.map(
+                    (l: any, k: number) => (
+                      <li key={k}>
+                        {l.lever} — {l.status}
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            ))}
+
+            <p className="text-sm italic text-gray-600">
+              {teamA.comparativePAI?.conclusion}
+            </p>
+          </div>
+        );
+      })}
+
+      <footer className="text-xs text-gray-500 mt-10">
+        FAIR — structure over narrative · eytan_ellenberg@yahoo.fr
+      </footer>
+    </main>
+  );
+                        }
