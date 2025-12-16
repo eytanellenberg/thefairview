@@ -9,7 +9,10 @@ export async function buildNBASnapshot() {
       const { last, next } = await getLastAndNextGame("nba", team.id);
 
       snapshot.push({
-        team,
+        team: {
+          id: team.id,
+          name: team.name,
+        },
 
         lastGame: last
           ? {
@@ -25,54 +28,67 @@ export async function buildNBASnapshot() {
               opponentId:
                 last.home.id === team.id
                   ? last.away.id
-                  : last.home.id
+                  : last.home.id,
             }
           : null,
 
-        nextGame: next
-          ? {
-              dateUtc: next.dateUtc,
-              opponent:
-                next.home.id === team.id
-                  ? next.away.name
-                  : next.home.name,
-              opponentId:
-                next.home.id === team.id
-                  ? next.away.id
-                  : next.home.id
-            }
-          : null,
-
-        // FREE MODE — static comparative placeholders
+        // 🔵 PREGAME — Comparative RAI (FREE proxy)
         comparativeRAI: next
           ? {
-              delta: 0,
+              delta: 3, // oriented edge (FREE placeholder)
+              edgeTeam: team.name,
               levers: [
-                { lever: "Offensive spacing", team: team.name, value: 2 },
-                { lever: "PnR stress", team: "Opponent", value: 3 },
-                { lever: "Shot quality", team: team.name, value: 1 }
-              ]
+                {
+                  lever: "Offensive spacing",
+                  advantage: team.name,
+                  value: 2,
+                },
+                {
+                  lever: "Shot quality creation",
+                  advantage: team.name,
+                  value: 3,
+                },
+                {
+                  lever: "PnR matchup stress",
+                  advantage: "Opponent",
+                  value: 6,
+                },
+              ],
+              interpretation:
+                "Slight structural edge expected based on offensive organization and shot profile.",
             }
           : null,
 
+        // 🔴 POSTGAME — Comparative PAI (observed vs expectation)
         comparativePAI: last
           ? {
-              delta: 0,
               levers: [
-                { lever: "Offensive spacing", status: "Affaibli" },
-                { lever: "PnR stress", status: "Confirmé" },
-                { lever: "Shot quality", status: "Affaibli" }
+                {
+                  lever: "Offensive spacing",
+                  status: "Weakened vs expectation",
+                },
+                {
+                  lever: "Shot quality creation",
+                  status: "Weakened vs expectation",
+                },
+                {
+                  lever: "PnR matchup stress",
+                  status: "Confirmed as expected",
+                },
               ],
-              conclusion: "Victory despite weak structural execution"
+              conclusion:
+                "Victory achieved despite weaker-than-expected offensive execution.",
             }
-          : null
+          : null,
       });
-    } catch {}
+    } catch {
+      // skip team on ESPN error
+    }
   }
 
   return {
     sport: "NBA",
     updatedAt: new Date().toISOString(),
-    snapshot
+    snapshot,
   };
 }
