@@ -1,57 +1,93 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getLastAndNextGame } from "@/lib/providers/espn";
+export const revalidate = 6 * 60 * 60;
 
-/**
- * PAI — Performance Attribution Index (POST-GAME)
- * FAIR-Sport observed execution levers only
- */
+async function getSnapshot() {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/nba/snapshot`
+  );
+  return res.json();
+}
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const sport = searchParams.get("sport");
-  const teamId = searchParams.get("teamId");
+export default async function NBAPage() {
+  const data = await getSnapshot();
 
-  if (!sport || !teamId) {
-    return NextResponse.json({ error: "Missing sport or teamId" }, { status: 400 });
-  }
+  return (
+    <main className="max-w-7xl mx-auto p-6 space-y-10">
+      <header>
+        <h1 className="text-3xl font-bold">NBA — FAIR Engine</h1>
+        <p className="text-gray-600">
+          Current snapshot · Updated periodically · FAIR-Sport attribution
+        </p>
+        <p className="text-xs text-gray-400">
+          Last update: {new Date(data.updatedAt).toLocaleString()}
+        </p>
+      </header>
 
-  const { last } = await getLastAndNextGame(sport as any, teamId);
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {data.snapshot.map((item: any) => (
+          <div
+            key={item.team.id}
+            className="border rounded-2xl p-5 space-y-6"
+          >
+            <h2 className="text-xl font-semibold">{item.team.name}</h2>
 
-  if (!last) {
-    return NextResponse.json({ status: "no_last_game" });
-  }
+            {/* PAI */}
+            {item.pai && (
+              <section>
+                <h3 className="font-semibold text-red-600">
+                  Observed impact (PAI)
+                </h3>
+                <div className="text-lg font-bold">
+                  PAI: {item.pai.value}
+                </div>
+                <ul className="text-sm space-y-1">
+                  {item.pai.topLevers.map((l: any, i: number) => (
+                    <li key={i}>
+                      <strong>
+                        {l.contribution > 0 ? "+" : ""}
+                        {l.contribution}
+                      </strong>{" "}
+                      {l.lever}
+                      <div className="text-xs text-gray-500">
+                        {l.rationale}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
-  // 🔴 FAIR-Sport observed execution levers
-  const levers = [
-    {
-      lever: "Half-court execution efficiency",
-      contribution: -18,
-      rationale: "Set actions degraded under defensive pressure"
-    },
-    {
-      lever: "Defensive rotation latency",
-      contribution: -12,
-      rationale: "Late help and close-outs observed"
-    },
-    {
-      lever: "Shot quality creation",
-      contribution: 7,
-      rationale: "Good shot generation despite structural breakdowns"
-    }
-  ];
+            {/* RAI */}
+            <section>
+              <h3 className="font-semibold text-blue-600">
+                Predicted readiness (RAI)
+              </h3>
+              <div className="text-lg font-bold">
+                RAI: {item.rai.value}
+              </div>
+              <ul className="text-sm space-y-1">
+                {item.rai.topLevers.map((l: any, i: number) => (
+                  <li key={i}>
+                    <strong>
+                      {l.contribution > 0 ? "+" : ""}
+                      {l.contribution}
+                    </strong>{" "}
+                    {l.lever}
+                    <div className="text-xs text-gray-500">
+                      {l.rationale}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        ))}
+      </div>
 
-  const pai =
-    50 +
-    levers.reduce((sum, l) => sum + l.contribution, 0) / 3;
-
-  return NextResponse.json({
-    status: "free",
-    type: "post-game",
-    game: last,
-    pai: Math.round(pai),
-    topLevers: levers.slice(0, 3),
-    interpretation:
-      "Observed execution impact decomposed into tactical performance drivers"
-  });
+      <footer className="text-sm text-gray-500 max-w-4xl">
+        Snapshot-based FAIR-Sport attribution.
+        Updated periodically using public data.
+        Club data integration enables deeper tactical resolution.
+      </footer>
+    </main>
+  );
 }
