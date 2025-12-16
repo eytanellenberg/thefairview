@@ -9,20 +9,20 @@ export default async function NBAPage() {
     <main className="min-h-screen bg-white text-gray-900">
       <div className="p-6 max-w-5xl mx-auto text-sm">
         <h1 className="text-2xl font-semibold mb-2">
-          NBA — Comparative RAI & PAI
+          NBA — Team-by-team RAI & PAI
         </h1>
 
         <p className="text-gray-600 mb-6">
-          RAI (pre-game) identifies which structural levers are expected to
-          matter most in the matchup. PAI (post-game) verifies execution on
-          the same levers. NEW flags an emergent lever.
+          PAI (post-game) explains what actually happened in the last match.
+          RAI (pre-game) highlights which structural levers are expected to
+          matter in the upcoming matchup.
         </p>
 
         <p className="text-xs text-gray-500 mb-8">
           Last update: {new Date(data.updatedAt).toLocaleString()}
         </p>
 
-        <div className="space-y-10">
+        <div className="space-y-12">
           {data.snapshot.map((teamBlock: any) => (
             <section
               key={teamBlock.team.id}
@@ -48,9 +48,49 @@ export default async function NBAPage() {
                 </div>
               )}
 
+              {/* 🔴 PAI */}
+              {teamBlock.comparativePAI && (
+                <div>
+                  <h3 className="font-semibold mt-2">
+                    Comparative Execution (PAI)
+                  </h3>
+
+                  <p className="mb-1">
+                    PAI score:{" "}
+                    <strong>{teamBlock.comparativePAI.value}</strong>
+                  </p>
+
+                  <ul className="list-disc ml-5">
+                    {teamBlock.comparativePAI.observedLevers.map(
+                      (l: any) => (
+                        <li key={l.lever}>
+                          <strong>{l.lever}</strong>{" "}
+                          {l.contribution > 0 ? "+" : ""}
+                          {l.contribution}
+                          {l.status &&
+                            l.status !== "as_expected" && (
+                              <span className="ml-1 text-xs text-gray-500">
+                                ({l.status})
+                              </span>
+                            )}
+                          <br />
+                          <span className="text-gray-600">
+                            {l.rationale}
+                          </span>
+                        </li>
+                      )
+                    )}
+                  </ul>
+
+                  <p className="italic text-gray-600 mt-2">
+                    {teamBlock.comparativePAI.summary}
+                  </p>
+                </div>
+              )}
+
               {/* 🔵 NEXT GAME */}
               {teamBlock.nextGame && (
-                <div>
+                <div className="pt-2">
                   <h3 className="font-semibold">
                     Next game
                   </h3>
@@ -68,6 +108,7 @@ export default async function NBAPage() {
                   <h3 className="font-semibold mt-2">
                     Comparative Readiness (RAI)
                   </h3>
+
                   <p className="mb-1">
                     RAI score:{" "}
                     <strong>{teamBlock.comparativeRAI.value}</strong>
@@ -91,44 +132,6 @@ export default async function NBAPage() {
 
                   <p className="italic text-gray-600 mt-2">
                     {teamBlock.comparativeRAI.summary}
-                  </p>
-                </div>
-              )}
-
-              {/* 🔴 PAI */}
-              {teamBlock.comparativePAI && (
-                <div>
-                  <h3 className="font-semibold mt-2">
-                    Comparative Execution (PAI)
-                  </h3>
-                  <p className="mb-1">
-                    PAI score:{" "}
-                    <strong>{teamBlock.comparativePAI.value}</strong>
-                  </p>
-
-                  <ul className="list-disc ml-5">
-                    {teamBlock.comparativePAI.observedLevers.map(
-                      (l: any) => (
-                        <li key={l.lever}>
-                          <strong>{l.lever}</strong>{" "}
-                          {l.contribution > 0 ? "+" : ""}
-                          {l.contribution}{" "}
-                          {l.status && (
-                            <span className="text-xs text-gray-500">
-                              ({l.status})
-                            </span>
-                          )}
-                          <br />
-                          <span className="text-gray-600">
-                            {l.rationale}
-                          </span>
-                        </li>
-                      )
-                    )}
-                  </ul>
-
-                  <p className="italic text-gray-600 mt-2">
-                    {teamBlock.comparativePAI.summary}
                   </p>
                 </div>
               )}
