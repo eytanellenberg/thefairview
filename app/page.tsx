@@ -1,40 +1,11 @@
-"use client";
-
 import Link from "next/link";
-
-function MotionFigure() {
-  return (
-    <svg
-      width="48"
-      height="48"
-      viewBox="0 0 48 48"
-      className="ml-3 text-gray-500 motion-figure"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* head */}
-      <circle cx="24" cy="9" r="4" fill="currentColor" />
-      {/* body */}
-      <path
-        d="M24 14 L22 26 L16 36 M24 26 L30 36 M22 18 L14 22 M26 18 L34 22"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 export default function HomePage() {
   return (
     <main className="p-6 max-w-4xl mx-auto text-gray-900 bg-white">
-      {/* TITLE */}
-      <div className="flex items-center mb-4">
-        <h1 className="text-3xl font-semibold">
-          The Fair View
-        </h1>
-        <MotionFigure />
-      </div>
+      <h1 className="text-3xl font-semibold mb-4">
+        The Fair View
+      </h1>
 
       <p className="text-base text-gray-700 mb-6">
         FAIR applies causal reasoning to sports analysis.
@@ -73,19 +44,19 @@ export default function HomePage() {
             href="/nba"
             className="border rounded p-3 hover:bg-gray-50"
           >
-            NBA — last game analysis (FREE)
+            🏀 <strong>NBA</strong> — last game analysis (FREE)
           </Link>
 
           <Link
             href="/nfl"
             className="border rounded p-3 hover:bg-gray-50"
           >
-            NFL — last game analysis (FREE)
+            🏈 <strong>NFL</strong> — last game analysis (FREE)
           </Link>
         </div>
       </div>
 
-      {/* ANALYSTS */}
+      {/* ANALYSTS & CLUBS */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-2">
           For analysts & clubs
@@ -103,28 +74,6 @@ export default function HomePage() {
       <footer className="text-xs text-gray-500 mt-10">
         FAIR — structure over narrative
       </footer>
-
-      {/* subtle motion */}
-      <style jsx>{`
-        .motion-figure {
-          animation: drift 4.5s ease-in-out infinite;
-        }
-
-        @keyframes drift {
-          0% {
-            transform: translateY(0);
-            opacity: 0.7;
-          }
-          50% {
-            transform: translateY(-3px);
-            opacity: 0.9;
-          }
-          100% {
-            transform: translateY(0);
-            opacity: 0.7;
-          }
-        }
-      `}</style>
     </main>
   );
 }
