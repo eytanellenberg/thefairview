@@ -8,6 +8,17 @@ export async function buildNBASnapshot() {
     try {
       const { last, next } = await getLastAndNextGame("nba", team.id);
 
+      const opponentName =
+        last
+          ? last.home.id === team.id
+            ? last.away.name
+            : last.home.name
+          : next
+          ? next.home.id === team.id
+            ? next.away.name
+            : next.home.name
+          : "Unknown";
+
       snapshot.push({
         team: {
           id: team.id,
@@ -21,10 +32,7 @@ export async function buildNBASnapshot() {
                 last.home.id === team.id
                   ? `${last.home.score} – ${last.away.score}`
                   : `${last.away.score} – ${last.home.score}`,
-              opponent:
-                last.home.id === team.id
-                  ? last.away.name
-                  : last.home.name,
+              opponent: opponentName,
               opponentId:
                 last.home.id === team.id
                   ? last.away.id
@@ -35,7 +43,7 @@ export async function buildNBASnapshot() {
         // 🔵 PREGAME — Comparative RAI (FREE proxy)
         comparativeRAI: next
           ? {
-              delta: 3, // oriented edge (FREE placeholder)
+              delta: 3,
               edgeTeam: team.name,
               levers: [
                 {
@@ -50,7 +58,7 @@ export async function buildNBASnapshot() {
                 },
                 {
                   lever: "PnR matchup stress",
-                  advantage: "Opponent",
+                  advantage: opponentName,
                   value: 6,
                 },
               ],
@@ -59,7 +67,7 @@ export async function buildNBASnapshot() {
             }
           : null,
 
-        // 🔴 POSTGAME — Comparative PAI (observed vs expectation)
+        // 🔴 POSTGAME — Comparative PAI
         comparativePAI: last
           ? {
               levers: [
