@@ -1,130 +1,143 @@
 import { buildNBASnapshot } from "@/lib/nbaSnapshot";
 
-export const revalidate = 6 * 60 * 60; // 6h
+type LeverStatus = "expected" | "stronger" | "weaker" | "new";
 
-// petite variation déterministe par équipe (PROVISOIRE MAIS COHÉRENTE)
-function teamFactor(id: string) {
-  let x = 0;
-  for (let i = 0; i < id.length; i++) {
-    x += id.charCodeAt(i);
-  }
-  return (x % 15) - 7; // entre -7 et +7
+function LeverBadge({ status }: { status?: LeverStatus }) {
+  if (!status) return null;
+
+  const styles: Record<LeverStatus, string> = {
+    expected: "bg-gray-200 text-gray-800",
+    stronger: "bg-green-200 text-green-800",
+    weaker: "bg-red-200 text-red-800",
+    new: "bg-orange-200 text-orange-800"
+  };
+
+  const labels: Record<LeverStatus, string> = {
+    expected: "as expected",
+    stronger: "stronger",
+    weaker: "weaker",
+    new: "NEW"
+  };
+
+  return (
+    <span className={`ml-2 px-2 py-0.5 rounded text-xs font-medium ${styles[status]}`}>
+      {labels[status]}
+    </span>
+  );
+}
+
+function LeverRow({
+  lever,
+  contribution,
+  rationale,
+  status
+}: {
+  lever: string;
+  contribution: number;
+  rationale: string;
+  status?: LeverStatus;
+}) {
+  return (
+    <div className="border rounded p-3 mb-2">
+      <div className="flex justify-between items-center">
+        <div className="font-medium">{lever}</div>
+        <div className="text-sm font-semibold">
+          {contribution > 0 ? `+${contribution}` : contribution}
+          <LeverBadge status={status} />
+        </div>
+      </div>
+      <div className="text-sm text-gray-600 mt-1">{rationale}</div>
+    </div>
+  );
 }
 
 export default async function NBAPage() {
   const data = await buildNBASnapshot();
 
+  // 🔑 CRITICAL: defensive filtering
+  const snapshot = (data.snapshot || []).filter(
+    (t: any) => t && t.team && t.team.id
+  );
+
   return (
-    <main className="max-w-7xl mx-auto p-6 space-y-10 bg-white text-black">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">NBA — FAIR Engine</h1>
-        <p className="text-base">
-          Structural execution (PAI) & matchup-relative readiness (RAI)
+    <main className="max-w-5xl mx-auto p-6 space-y-10">
+      <header>
+        <h1 className="text-3xl font-bold">NBA — Comparative Snapshot</h1>
+        <p className="text-gray-600 mt-1">
+          Comparative Execution (PAI) & Comparative Readiness (RAI)
         </p>
-        <p className="text-sm text-gray-600">
-          Snapshot updated: {new Date(data.updatedAt).toLocaleString()}
+        <p className="text-xs text-gray-400 mt-1">
+          Last update: {new Date(data.updatedAt).toLocaleString()}
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {data.snapshot.map((item: any) => {
-          const delta = teamFactor(item.team.id);
+      {snapshot.map((teamSnap: any) => (
+        <section
+          key={teamSnap.team.id}
+          className="border rounded-lg p-6 shadow-sm"
+        >
+          <h2 className="text-2xl font-semibold mb-4">
+            {teamSnap.team.name}
+          </h2>
 
-          const paiValue = item.pai ? item.pai.value + delta : null;
-          const raiValue = item.rai.value + delta;
+          {/* POST-GAME — PAI */}
+          {teamSnap.comparativePAI && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-red-700 mb-2">
+                Comparative Execution (PAI)
+              </h3>
 
-          return (
-            <div
-              key={item.team.id}
-              className="border border-black rounded-xl p-5 space-y-6"
-            >
-              <h2 className="text-xl font-bold">{item.team.name}</h2>
+              <p className="font-medium mb-3">
+                PAI Score: {teamSnap.comparativePAI.value}
+              </p>
 
-              {/* -------- PAI -------- */}
-              {item.pai && item.lastGame && (
-                <section className="space-y-2">
-                  <h3 className="font-semibold">
-                    Observed structural execution (PAI)
-                  </h3>
-
-                  <div className="text-base font-semibold">
-                    Last game — {item.lastGame.home.name}{" "}
-                    {item.lastGame.home.score} –{" "}
-                    {item.lastGame.away.score}{" "}
-                    {item.lastGame.away.name}
-                  </div>
-
-                  <div className="text-lg font-bold">
-                    PAI: {paiValue}
-                  </div>
-
-                  <ul className="text-sm space-y-1">
-                    {item.pai.topLevers.map((l: any, i: number) => (
-                      <li key={i}>
-                        <strong>
-                          {l.contribution > 0 ? "+" : ""}
-                          {l.contribution}
-                        </strong>{" "}
-                        {l.lever}
-                        <div className="text-xs">
-                          {l.rationale}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <p className="text-xs text-gray-600">
-                    PAI measures execution quality, not win/loss.
-                    Teams may win despite negative structural execution.
-                  </p>
-                </section>
+              {teamSnap.comparativePAI.observedLevers.map(
+                (lever: any, idx: number) => (
+                  <LeverRow
+                    key={idx}
+                    lever={lever.lever}
+                    contribution={lever.contribution}
+                    rationale={lever.rationale}
+                    status={lever.status}
+                  />
+                )
               )}
 
-              {/* -------- RAI -------- */}
-              {item.nextGame && (
-                <section className="space-y-2">
-                  <h3 className="font-semibold">
-                    Matchup-relative readiness (RAI)
-                  </h3>
-
-                  <div className="text-base font-semibold">
-                    Next game — {item.nextGame.home.name} vs{" "}
-                    {item.nextGame.away.name}
-                  </div>
-
-                  <div className="text-lg font-bold">
-                    RAI: {raiValue}
-                  </div>
-
-                  <ul className="text-sm space-y-1">
-                    {item.rai.topLevers.map((l: any, i: number) => (
-                      <li key={i}>
-                        <strong>
-                          {l.contribution > 0 ? "+" : ""}
-                          {l.contribution}
-                        </strong>{" "}
-                        {l.lever}
-                        <div className="text-xs">
-                          {l.rationale}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <p className="text-xs text-gray-600">
-                    RAI is relative to the upcoming opponent and matchup context.
-                  </p>
-                </section>
-              )}
+              <p className="text-sm italic text-gray-700 mt-3">
+                {teamSnap.comparativePAI.summary}
+              </p>
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      <footer className="text-sm text-gray-600 max-w-4xl">
-        Public snapshot using generic FAIR-Sport structural levers.
-        Team-specific calibration requires historical data and/or club integration.
-      </footer>
+          {/* PRE-GAME — RAI */}
+          {teamSnap.comparativeRAI && (
+            <div>
+              <h3 className="text-lg font-semibold text-blue-700 mb-2">
+                Comparative Readiness (RAI)
+              </h3>
+
+              <p className="font-medium mb-3">
+                RAI Score: {teamSnap.comparativeRAI.value}
+              </p>
+
+              {teamSnap.comparativeRAI.expectedLevers.map(
+                (lever: any, idx: number) => (
+                  <LeverRow
+                    key={idx}
+                    lever={lever.lever}
+                    contribution={lever.contribution}
+                    rationale={lever.rationale}
+                  />
+                )
+              )}
+
+              <p className="text-sm italic text-gray-700 mt-3">
+                {teamSnap.comparativeRAI.summary}
+              </p>
+            </div>
+          )}
+        </section>
+      ))}
     </main>
   );
 }
