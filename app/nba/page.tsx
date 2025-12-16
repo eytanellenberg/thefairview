@@ -2,28 +2,29 @@ import { buildNBASnapshot } from "@/lib/nbaSnapshot";
 
 export const revalidate = 300;
 
-type TeamBlock = any;
-
-function matchKey(game: any) {
-  if (!game) return null;
-  return `${game.dateUtc}-${game.opponent}`;
+function matchKey(dateUtc: string, teamA: string, teamB: string) {
+  const teams = [teamA, teamB].sort().join("-");
+  return `${dateUtc}-${teams}`;
 }
 
 export default async function NBAPage() {
   const data = await buildNBASnapshot();
-  const teams: TeamBlock[] = data.snapshot;
+  const teams = data.snapshot;
 
   const playedMatches: Record<string, any> = {};
   const upcomingMatches: Record<string, any> = {};
 
   // ----------------------------
-  // BUILD MATCH GROUPS
+  // GROUP MATCHES
   // ----------------------------
-  teams.forEach(team => {
+  teams.forEach((team: any) => {
     // POSTGAME
     if (team.lastGame && team.comparativePAI) {
-      const key = matchKey(team.lastGame);
-      if (!key) return;
+      const key = matchKey(
+        team.lastGame.dateUtc,
+        team.team.id,
+        team.lastGame.opponentId
+      );
 
       if (!playedMatches[key]) {
         playedMatches[key] = {
@@ -32,14 +33,16 @@ export default async function NBAPage() {
           game: team.lastGame
         };
       }
-
       playedMatches[key].teams.push(team);
     }
 
     // PREGAME
     if (team.nextGame && team.comparativeRAI) {
-      const key = matchKey(team.nextGame);
-      if (!key) return;
+      const key = matchKey(
+        team.nextGame.dateUtc,
+        team.team.id,
+        team.nextGame.opponentId
+      );
 
       if (!upcomingMatches[key]) {
         upcomingMatches[key] = {
@@ -48,16 +51,14 @@ export default async function NBAPage() {
           game: team.nextGame
         };
       }
-
       upcomingMatches[key].teams.push(team);
     }
   });
 
-  // 👉 KEEP ONLY COMPLETE MATCHES (2 TEAMS)
+  // ONLY FULL MATCHES
   const played = Object.values(playedMatches).filter(
     (m: any) => m.teams.length === 2
   );
-
   const upcoming = Object.values(upcomingMatches).filter(
     (m: any) => m.teams.length === 2
   );
@@ -71,14 +72,11 @@ export default async function NBAPage() {
             NBA — Match-based FAIR Analysis
           </h1>
           <p className="text-gray-600 mt-2">
-            One card per match. Post-game execution (PAI) explains what happened.
-            Pre-game readiness (RAI) explains what was expected.
+            One card per match. PAI explains what happened. RAI explains what was expected.
           </p>
         </header>
 
-        {/* ========================= */}
         {/* PLAYED MATCHES */}
-        {/* ========================= */}
         <section className="space-y-8">
           <h2 className="text-xl font-medium">Played matches</h2>
 
@@ -90,34 +88,26 @@ export default async function NBAPage() {
                 key={i}
                 className="border border-gray-200 rounded-lg p-5 space-y-4"
               >
-                <h3 className="font-semibold text-base">
+                <h3 className="font-semibold">
                   {a.team.name} vs {b.team.name}
                 </h3>
 
-                <p className="text-gray-700">
+                <p>
                   Final score: <strong>{match.game.score}</strong>
                 </p>
 
-                {/* PAI COMPARATIVE */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[a, b].map(t => (
+                  {[a, b].map((t: any) => (
                     <div key={t.team.id}>
                       <h4 className="font-medium">
                         {t.team.name} — PAI {t.comparativePAI.value}
                       </h4>
-
                       <ul className="list-disc ml-5 mt-1">
                         {t.comparativePAI.observedLevers.map((l: any) => (
                           <li key={l.lever}>
                             <strong>{l.lever}</strong>{" "}
                             {l.contribution > 0 ? "+" : ""}
                             {l.contribution}
-                            {l.status &&
-                              l.status !== "as_expected" && (
-                                <span className="ml-1 text-xs text-gray-500">
-                                  ({l.status})
-                                </span>
-                              )}
                           </li>
                         ))}
                       </ul>
@@ -125,38 +115,24 @@ export default async function NBAPage() {
                   ))}
                 </div>
 
-                {/* MATCH CONCLUSION */}
                 <div className="italic text-gray-600 pt-2 border-t">
-                  {(() => {
-                    if (
-                      a.comparativePAI.value > 50 &&
-                      b.comparativePAI.value < 50
-                    ) {
-                      return `${a.team.name} wins logically on structural execution.`;
-                    }
-                    if (
-                      a.comparativePAI.value < 50 &&
+                  {a.comparativePAI.value > 50 &&
+                  b.comparativePAI.value < 50
+                    ? `${a.team.name} wins logically on structural execution.`
+                    : a.comparativePAI.value < 50 &&
                       b.comparativePAI.value > 50
-                    ) {
-                      return `${b.team.name} wins logically on structural execution.`;
-                    }
-                    if (
-                      a.comparativePAI.value < 50 &&
+                    ? `${b.team.name} wins logically on structural execution.`
+                    : a.comparativePAI.value < 50 &&
                       b.comparativePAI.value < 50
-                    ) {
-                      return `Victory driven by non-structural factors despite limited execution quality.`;
-                    }
-                    return `Defeat despite good structural execution; outcome driven by non-structural factors.`;
-                  })()}
+                    ? "Victory despite weak structural execution."
+                    : "Defeat despite good structural execution."}
                 </div>
               </div>
             );
           })}
         </section>
 
-        {/* ========================= */}
         {/* UPCOMING MATCHES */}
-        {/* ========================= */}
         <section className="space-y-8">
           <h2 className="text-xl font-medium">Upcoming matches</h2>
 
@@ -168,17 +144,16 @@ export default async function NBAPage() {
                 key={i}
                 className="border border-gray-200 rounded-lg p-5 space-y-4"
               >
-                <h3 className="font-semibold text-base">
+                <h3 className="font-semibold">
                   {a.team.name} vs {b.team.name}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[a, b].map(t => (
+                  {[a, b].map((t: any) => (
                     <div key={t.team.id}>
                       <h4 className="font-medium">
                         {t.team.name} — RAI {t.comparativeRAI.value}
                       </h4>
-
                       <ul className="list-disc ml-5 mt-1">
                         {t.comparativeRAI.expectedLevers.map((l: any) => (
                           <li key={l.lever}>
@@ -193,7 +168,7 @@ export default async function NBAPage() {
                 </div>
 
                 <p className="italic text-gray-600 pt-2 border-t">
-                  Pre-game hypothesis based on comparative structural readiness.
+                  Pre-game hypothesis based on comparative readiness.
                 </p>
               </div>
             );
@@ -206,4 +181,4 @@ export default async function NBAPage() {
       </div>
     </main>
   );
-}
+                  }
