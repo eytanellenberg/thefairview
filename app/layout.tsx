@@ -1,19 +1,20 @@
-import type { Metadata } from "next";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "TheFairView - Attribution Causale Sportive",
-  description: "Analyse RAI/PAI",
+export const metadata = {
+  title: "The Fair View",
+  description: "Predictive Sport Analytics with RAI/PAI"
 };
 
 export default function RootLayout({
-  children,
+  children
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
-      <body>{children}</body>
+    <html lang="en">
+      <body className="bg-white text-gray-900">
+        {children}
+      </body>
     </html>
   );
 }
