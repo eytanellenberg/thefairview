@@ -1,59 +1,57 @@
-import Link from "next/link";
+export default function HomePage() { return ( <main className="p-6 max-w-4xl mx-auto text-gray-900 bg-white"> <h1 className="text-3xl font-semibold mb-4">The Fair View</h1>
 
-export default function HomePage() {
-  return (
-    <main className="min-h-screen bg-white text-gray-900 flex items-center justify-center">
-      <div className="max-w-xl w-full px-6 space-y-10 text-center">
-        <header className="space-y-4">
-          <h1 className="text-4xl font-bold">The Fair View</h1>
+<p className="text-base text-gray-700 mb-6">
+    FAIR applies causal reasoning to sport analysis.
+    <br />
+    Not predictive. Comparative. Match-based.
+  </p>
 
-          <p className="text-gray-700 text-sm">
-            Comparative sport analytics based on <strong>pre-game readiness</strong> and
-            <strong> post-game execution</strong>.
-          </p>
-        </header>
+  <div className="mb-8">
+    <h2 className="text-lg font-semibold mb-2">How it works</h2>
+    <ul className="list-disc ml-6 text-sm text-gray-700">
+      <li><strong>RAI</strong> — what was structurally expected before the game</li>
+      <li><strong>Levers</strong> — where the comparative edge was</li>
+      <li><strong>PAI</strong> — what actually decided the game</li>
+    </ul>
+    <p className="text-sm text-gray-600 mt-2">
+      This is a causal framework, not a prediction model.
+    </p>
+  </div>
 
-        {/* SPORT SELECTION */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold">Choose your sport</h2>
+  <div className="mb-8">
+    <h2 className="text-lg font-semibold mb-3">Live sports</h2>
+    <div className="flex flex-col gap-2">
+      <Link
+        href="/nba"
+        className="border rounded p-3 hover:bg-gray-50"
+      >
+        <strong>NBA</strong> — last game analysis (FREE)
+      </Link>
 
-          <Link
-            href="/nba"
-            className="block border rounded-lg p-4 hover:bg-gray-50 transition"
-          >
-            <div className="text-xl font-medium">🏀 NBA</div>
-            <div className="text-sm text-gray-600 mt-1">
-              Readiness & Execution analysis
-            </div>
-          </Link>
-        </section>
+      <Link
+        href="/nfl"
+        className="border rounded p-3 hover:bg-gray-50"
+      >
+        <strong>NFL</strong> — last game analysis (FREE)
+      </Link>
+    </div>
+  </div>
 
-        {/* MINI EXPLANATION */}
-        <section className="space-y-3 text-left text-sm text-gray-700">
-          <p>
-            <strong>RAI (Comparative Readiness)</strong> is a <strong>pre-game</strong> assessment.
-            It identifies which <strong>structural levers</strong> are expected to make the
-            difference between two teams.
-          </p>
+  <div className="mb-8">
+    <h2 className="text-lg font-semibold mb-2">For analysts & clubs</h2>
+    <p className="text-sm text-gray-700">
+      Analyses can become significantly more precise when internal team data
+      are integrated: expanded levers, deeper pregame modeling, and customized
+      causal attribution.
+    </p>
+    <p className="text-sm text-gray-700 mt-2">
+      Contact: <strong>eytan_ellenberg@yahoo.fr</strong>
+    </p>
+  </div>
 
-          <p>
-            <strong>PAI (Comparative Execution)</strong> is a <strong>post-game</strong> verification.
-            It measures how those <strong>same levers</strong> were actually executed.
-          </p>
+  <footer className="text-xs text-gray-500 mt-10">
+    FAIR — structure over narrative
+  </footer>
+</main>
 
-          <p>
-            <strong>Levers</strong> are stable structural dimensions (spacing, defensive continuity,
-            matchup stress). They are defined <strong>before the game</strong> and evaluated
-            <strong>after</strong>.
-          </p>
-        </section>
-
-        {/* CONTACT */}
-        <footer className="pt-6 border-t text-xs text-gray-500">
-          Advanced analyses for analysts and clubs<br />
-          <span className="font-medium">contact@thefairview.com</span>
-        </footer>
-      </div>
-    </main>
-  );
-}
+); }
