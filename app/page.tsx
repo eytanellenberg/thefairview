@@ -56,6 +56,11 @@ function LeverRow({
 export default async function HomePage() {
   const data = await buildNBASnapshot();
 
+  // 🔑 CRITICAL: filter invalid entries
+  const snapshot = (data.snapshot || []).filter(
+    (t: any) => t && t.team && t.team.id
+  );
+
   return (
     <main className="max-w-5xl mx-auto p-6 space-y-10">
       <header>
@@ -68,7 +73,7 @@ export default async function HomePage() {
         </p>
       </header>
 
-      {data.snapshot.map((teamSnap: any) => (
+      {snapshot.map((teamSnap: any) => (
         <section
           key={teamSnap.team.id}
           className="border rounded-lg p-6 shadow-sm"
@@ -85,13 +90,16 @@ export default async function HomePage() {
               <h3 className="text-lg font-semibold text-red-700 mb-2">
                 Comparative Execution (PAI)
               </h3>
-              <p className="text-sm text-gray-600 mb-2">
-                Last game:{" "}
-                {teamSnap.lastGame?.homeTeam?.displayName}{" "}
-                {teamSnap.lastGame?.homeTeam?.score} –{" "}
-                {teamSnap.lastGame?.awayTeam?.score}{" "}
-                {teamSnap.lastGame?.awayTeam?.displayName}
-              </p>
+
+              {teamSnap.lastGame && (
+                <p className="text-sm text-gray-600 mb-2">
+                  Last game:{" "}
+                  {teamSnap.lastGame.homeTeam?.displayName}{" "}
+                  {teamSnap.lastGame.homeTeam?.score} –{" "}
+                  {teamSnap.lastGame.awayTeam?.score}{" "}
+                  {teamSnap.lastGame.awayTeam?.displayName}
+                </p>
+              )}
 
               <p className="font-medium mb-3">
                 PAI Score: {teamSnap.comparativePAI.value}
@@ -127,9 +135,9 @@ export default async function HomePage() {
               {teamSnap.nextGame && (
                 <p className="text-sm text-gray-600 mb-2">
                   Next game vs{" "}
-                  {teamSnap.nextGame.homeTeam.id === teamSnap.team.id
-                    ? teamSnap.nextGame.awayTeam.displayName
-                    : teamSnap.nextGame.homeTeam.displayName}
+                  {teamSnap.nextGame.homeTeam?.id === teamSnap.team.id
+                    ? teamSnap.nextGame.awayTeam?.displayName
+                    : teamSnap.nextGame.homeTeam?.displayName}
                 </p>
               )}
 
