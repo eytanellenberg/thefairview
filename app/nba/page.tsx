@@ -31,7 +31,7 @@ export default async function NBAPage() {
                   Observed impact (PAI)
                 </h3>
                 {item.lastGame && (
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm font-medium text-gray-900">
                     {item.lastGame.home.name}{" "}
                     {item.lastGame.home.score} –{" "}
                     {item.lastGame.away.score}{" "}
