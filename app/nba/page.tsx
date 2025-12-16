@@ -1,8 +1,9 @@
 import { buildNBASnapshot } from "@/lib/nbaSnapshot";
+import { InfoTooltip } from "@/app/components/InfoTooltip";
 
 type LeverStatus = "expected" | "stronger" | "weaker" | "new";
 
-function LeverBadge({ status }: { status?: LeverStatus }) {
+function StatusBadge({ status }: { status?: LeverStatus }) {
   if (!status) return null;
 
   const styles: Record<LeverStatus, string> = {
@@ -26,118 +27,96 @@ function LeverBadge({ status }: { status?: LeverStatus }) {
   );
 }
 
-function LeverRow({
-  lever,
-  contribution,
-  rationale,
-  status
-}: {
-  lever: string;
-  contribution: number;
-  rationale: string;
-  status?: LeverStatus;
-}) {
-  return (
-    <div className="border rounded p-3 mb-2">
-      <div className="flex justify-between items-center">
-        <div className="font-medium">{lever}</div>
-        <div className="text-sm font-semibold">
-          {contribution > 0 ? `+${contribution}` : contribution}
-          <LeverBadge status={status} />
-        </div>
-      </div>
-      <div className="text-sm text-gray-600 mt-1">{rationale}</div>
-    </div>
-  );
-}
-
 export default async function NBAPage() {
   const data = await buildNBASnapshot();
-
-  // 🔑 CRITICAL: defensive filtering
-  const snapshot = (data.snapshot || []).filter(
-    (t: any) => t && t.team && t.team.id
-  );
+  const snapshot = (data.snapshot || []).filter((t: any) => t?.team?.id);
 
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-10">
-      <header>
-        <h1 className="text-3xl font-bold">NBA — Comparative Snapshot</h1>
-        <p className="text-gray-600 mt-1">
-          Comparative Execution (PAI) & Comparative Readiness (RAI)
+    <main className="max-w-5xl mx-auto p-6 space-y-8 bg-white text-gray-900">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-bold">NBA — Comparative RAI & PAI</h1>
+        <p className="text-sm text-gray-700">
+          <strong>RAI</strong> (pre-game) defines which levers should matter most in the matchup.
+          <strong> PAI</strong> (post-game) verifies execution on the <strong>same levers</strong>.
+          <strong> NEW</strong> is rare and flags an emergent lever that became dominant unexpectedly.
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-gray-400">
           Last update: {new Date(data.updatedAt).toLocaleString()}
         </p>
       </header>
 
       {snapshot.map((teamSnap: any) => (
-        <section
-          key={teamSnap.team.id}
-          className="border rounded-lg p-6 shadow-sm"
-        >
-          <h2 className="text-2xl font-semibold mb-4">
-            {teamSnap.team.name}
-          </h2>
+        <section key={teamSnap.team.id} className="border rounded-lg p-6 shadow-sm">
+          <h2 className="text-xl font-semibold mb-4">{teamSnap.team.name}</h2>
 
-          {/* POST-GAME — PAI */}
-          {teamSnap.comparativePAI && (
+          {teamSnap.comparativeRAI && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-red-700 mb-2">
-                Comparative Execution (PAI)
+              <h3 className="font-semibold text-blue-700">
+                Comparative Readiness (RAI)
+                <InfoTooltip text="Pre-game hypothesis (matchup-relative): top 3 levers expected to influence the outcome." />
               </h3>
+              <p className="text-sm mt-1">RAI score: {teamSnap.comparativeRAI.value}</p>
 
-              <p className="font-medium mb-3">
-                PAI Score: {teamSnap.comparativePAI.value}
-              </p>
+              <div className="mt-3 space-y-2">
+                {(teamSnap.comparativeRAI.expectedLevers || []).map((l: any, i: number) => (
+                  <div key={i} className="border rounded p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">
+                        {l.lever}
+                        <InfoTooltip text="Pre-game lever. Weight reflects expected relative influence in this matchup." />
+                      </div>
+                      <div className="text-sm font-semibold">
+                        {l.contribution > 0 ? `+${l.contribution}` : l.contribution}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">{l.rationale}</div>
+                  </div>
+                ))}
+              </div>
 
-              {teamSnap.comparativePAI.observedLevers.map(
-                (lever: any, idx: number) => (
-                  <LeverRow
-                    key={idx}
-                    lever={lever.lever}
-                    contribution={lever.contribution}
-                    rationale={lever.rationale}
-                    status={lever.status}
-                  />
-                )
-              )}
-
-              <p className="text-sm italic text-gray-700 mt-3">
-                {teamSnap.comparativePAI.summary}
-              </p>
+              <div className="text-sm italic text-gray-700 mt-3">
+                {teamSnap.comparativeRAI.summary}
+              </div>
             </div>
           )}
 
-          {/* PRE-GAME — RAI */}
-          {teamSnap.comparativeRAI && (
+          {teamSnap.comparativePAI && (
             <div>
-              <h3 className="text-lg font-semibold text-blue-700 mb-2">
-                Comparative Readiness (RAI)
+              <h3 className="font-semibold text-red-700">
+                Comparative Execution (PAI)
+                <InfoTooltip text="Post-game verification: execution on the SAME levers as RAI. Status shows stronger/weaker vs expectation. NEW is rare." />
               </h3>
+              <p className="text-sm mt-1">PAI score: {teamSnap.comparativePAI.value}</p>
 
-              <p className="font-medium mb-3">
-                RAI Score: {teamSnap.comparativeRAI.value}
-              </p>
+              <div className="mt-3 space-y-2">
+                {(teamSnap.comparativePAI.observedLevers || []).map((l: any, i: number) => (
+                  <div key={i} className="border rounded p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">
+                        {l.lever}
+                        <InfoTooltip text="Same lever as in RAI. Status indicates deviation vs pre-game expectation." />
+                      </div>
+                      <div className="text-sm font-semibold">
+                        {l.contribution > 0 ? `+${l.contribution}` : l.contribution}
+                        <StatusBadge status={l.status} />
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">{l.rationale}</div>
+                  </div>
+                ))}
+              </div>
 
-              {teamSnap.comparativeRAI.expectedLevers.map(
-                (lever: any, idx: number) => (
-                  <LeverRow
-                    key={idx}
-                    lever={lever.lever}
-                    contribution={lever.contribution}
-                    rationale={lever.rationale}
-                  />
-                )
-              )}
-
-              <p className="text-sm italic text-gray-700 mt-3">
-                {teamSnap.comparativeRAI.summary}
-              </p>
+              <div className="text-sm italic text-gray-700 mt-3">
+                {teamSnap.comparativePAI.summary}
+              </div>
             </div>
           )}
         </section>
       ))}
+
+      <footer className="text-center text-xs text-gray-400 mt-8">
+        Analyses avancées disponibles pour analystes et clubs — contact@thefairview.com
+      </footer>
     </main>
   );
 }
