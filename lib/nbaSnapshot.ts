@@ -1,11 +1,7 @@
 import { NBA_TEAMS } from "@/lib/data/nbaTeams";
 import { getLastAndNextGame } from "@/lib/providers/espn";
-
 import { computeLeverDelta } from "@/lib/domain/leverDelta";
 
-/**
- * Types locaux simples
- */
 type Lever = {
   lever: string;
   contribution: number;
@@ -13,71 +9,64 @@ type Lever = {
 };
 
 export async function buildNBASnapshot() {
-  const snapshot = [];
+  const snapshot: any[] = [];
 
   for (const team of NBA_TEAMS) {
     try {
       const { last, next } = await getLastAndNextGame("nba", team.id);
 
-      /* =========================
-         COMPARATIVE READINESS (RAI)
-         ========================= */
-
+      // -------------------------
+      // Comparative Readiness (RAI) — PRE-GAME
+      // -------------------------
       const comparativeRAI = {
         value: 51,
         expectedLevers: [
           {
             lever: "Offensive spacing coherence",
             contribution: 14,
-            rationale:
-              "Stable role distribution and half-court spacing structure"
+            rationale: "Stable role distribution and half-court spacing structure"
           },
           {
             lever: "Defensive scheme continuity",
             contribution: 9,
-            rationale:
-              "Low tactical variability across recent games"
+            rationale: "Low tactical variability across recent games"
           },
           {
             lever: "PnR matchup stress",
             contribution: -11,
-            rationale:
-              "Opponent pick-and-roll profile induces coverage strain"
+            rationale: "Opponent pick-and-roll profile induces coverage strain"
           }
         ],
         summary:
-          "Slight structural edge expected, with pick-and-roll coverage identified as the primary risk factor."
+          "Pre-game hypothesis: these 3 levers are expected to matter most in this matchup (comparative, opponent-relative)."
       };
 
-      /* =========================
-         COMPARATIVE EXECUTION (PAI)
-         ========================= */
-
-      let comparativePAI = null;
+      // -------------------------
+      // Comparative Execution (PAI) — POST-GAME
+      // PAI measures execution of the SAME levers as RAI
+      // -------------------------
+      let comparativePAI: any = null;
 
       if (last) {
+        // ✅ SAME LEVERS as RAI (names must match exactly)
         const observedLevers: Lever[] = [
           {
-            lever: "Half-court execution efficiency",
-            contribution: -18,
-            rationale:
-              "Set execution degraded under defensive pressure"
+            lever: "Offensive spacing coherence",
+            contribution: -8,
+            rationale: "Half-court execution stagnated, limiting clean shot creation"
           },
           {
-            lever: "Defensive rotation latency",
+            lever: "Defensive scheme continuity",
             contribution: -12,
-            rationale:
-              "Late help and close-outs observed repeatedly"
+            rationale: "Late rotations and repeated coverage breakdowns"
           },
           {
-            lever: "Shot quality creation",
-            contribution: 7,
-            rationale:
-              "Shot profile remained acceptable"
+            lever: "PnR matchup stress",
+            contribution: -6,
+            rationale: "Pick-and-roll actions repeatedly stressed coverage"
           }
         ];
 
-        // 🔑 HERE IS THE LINE YOU ASKED ABOUT
         const observedLeversWithStatus = computeLeverDelta(
           comparativeRAI.expectedLevers,
           observedLevers
@@ -87,28 +76,20 @@ export async function buildNBASnapshot() {
           value: 37,
           observedLevers: observedLeversWithStatus,
           summary:
-            "Win achieved despite weak structural execution. Shot creation held, while half-court execution under pressure collapsed.",
+            "Post-game verification: execution fell below the pre-game hypothesis. Same levers, different intensity/order. NEW is reserved for rare emergent levers.",
           delta: {
-            confirmed: observedLeversWithStatus.filter(
-              l => l.status === "expected"
-            ),
-            strongerThanExpected: observedLeversWithStatus.filter(
-              l => l.status === "stronger"
-            ),
-            weakerThanExpected: observedLeversWithStatus.filter(
-              l => l.status === "weaker"
-            ),
-            emergent: observedLeversWithStatus.filter(
-              l => l.status === "new"
-            )
+            asExpected: observedLeversWithStatus.filter((l: any) => l.status === "expected"),
+            stronger: observedLeversWithStatus.filter((l: any) => l.status === "stronger"),
+            weaker: observedLeversWithStatus.filter((l: any) => l.status === "weaker"),
+            new: observedLeversWithStatus.filter((l: any) => l.status === "new")
           }
         };
       }
 
       snapshot.push({
         team,
-        lastGame: last,
-        nextGame: next,
+        lastGame: last ?? null,
+        nextGame: next ?? null,
         comparativeRAI,
         comparativePAI
       });
