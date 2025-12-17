@@ -1,14 +1,8 @@
-import { buildSoccerSnapshot } from "@/lib/soccerSnapshot";
+import { buildSoccerLeagueSnapshot } from "@/lib/soccerLeagueSnapshot";
 
 export default async function SoccerPage() {
-  const data = await buildSoccerSnapshot();
-
-  const games = data.snapshot
-    .filter((e: any) => e.lastGame)
-    .sort(
-      (a: any, b: any) =>
-        b.lastGame.dateUtc.localeCompare(a.lastGame.dateUtc)
-    );
+  const data = await buildSoccerLeagueSnapshot();
+  const matches = data.snapshot ?? [];
 
   return (
     <main className="p-6 max-w-5xl mx-auto text-gray-900 bg-white">
@@ -21,82 +15,80 @@ export default async function SoccerPage() {
         Post-game execution (PAI) explains what actually decided the match.
       </p>
 
-      <h2 className="text-lg font-semibold mb-4">Recent matches</h2>
+      <h2 className="text-lg font-semibold mb-4">
+        Recent matches — {data.league}
+      </h2>
 
-      {games.length === 0 && (
+      {matches.length === 0 && (
         <p className="text-sm text-gray-500">
-          No matches available yet. Soccer teams will appear here once ESPN data
-          is connected.
+          No matches available at the moment.
         </p>
       )}
 
-      {games.map((entry: any, index: number) => (
+      {matches.map((m: any, index: number) => (
         <div
           key={index}
           className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
         >
+          {/* Match header */}
           <h3 className="font-medium mb-1">
-            {entry.team.name} vs {entry.lastGame.opponent}
+            {m.match.home.name} vs {m.match.away.name}
           </h3>
 
           <p className="text-sm mb-3">
-            Final score: {entry.lastGame.score}
+            Final score: {m.match.home.score} – {m.match.away.score}
           </p>
 
           {/* 🔵 RAI */}
-          {entry.comparativeRAI && (
-            <div className="mb-4">
-              <h4 className="font-semibold text-sm mb-1">
-                Pregame — Comparative Readiness (RAI)
-              </h4>
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm mb-1">
+              Pregame — Comparative Readiness (RAI)
+            </h4>
 
-              <p className="text-sm mb-1">
-                RAI edge:{" "}
-                <strong>
-                  {entry.comparativeRAI.edgeTeam} +
-                  {entry.comparativeRAI.delta}
-                </strong>
-              </p>
+            <p className="text-sm mb-1">
+              RAI edge:{" "}
+              <strong>
+                {m.comparativeRAI.edgeTeam} +{m.comparativeRAI.delta}
+              </strong>
+            </p>
 
-              <ul className="list-disc ml-5 text-sm">
-                {entry.comparativeRAI.levers.map(
-                  (l: any, i: number) => (
-                    <li key={i}>
-                      {l.lever}: {l.advantage} +{l.value}
-                    </li>
-                  )
-                )}
-              </ul>
-            </div>
-          )}
+            <ul className="list-disc ml-5 text-sm">
+              {m.comparativeRAI.levers.map(
+                (l: any, i: number) => (
+                  <li key={i}>
+                    {l.lever}: {l.advantage} +{l.value}
+                  </li>
+                )
+              )}
+            </ul>
+          </div>
 
           {/* 🔴 PAI */}
-          {entry.comparativePAI && (
-            <div className="mb-2">
-              <h4 className="font-semibold text-sm mb-1">
-                Postgame — Comparative Execution (PAI)
-              </h4>
+          <div className="mb-2">
+            <h4 className="font-semibold text-sm mb-1">
+              Postgame — Comparative Execution (PAI)
+            </h4>
 
-              <ul className="list-disc ml-5 text-sm">
-                {entry.comparativePAI.levers.map(
-                  (l: any, i: number) => (
-                    <li key={i}>
-                      {l.lever}: {l.status}
-                    </li>
-                  )
-                )}
-              </ul>
-            </div>
-          )}
+            <ul className="list-disc ml-5 text-sm">
+              {m.comparativePAI.levers.map(
+                (l: any, i: number) => (
+                  <li key={i}>
+                    {l.lever}: {l.status}
+                  </li>
+                )
+              )}
+            </ul>
+          </div>
 
           <p className="text-sm italic text-gray-600">
-            {entry.comparativePAI?.conclusion}
+            {m.comparativePAI.conclusion}
           </p>
         </div>
       ))}
 
       <footer className="text-xs text-gray-500 mt-10">
-        FAIR — structure over narrative · eytan_ellenberg@yahoo.fr
+        Data source: ESPN · FAIR — structure over narrative ·
+        eytan_ellenberg@yahoo.fr
       </footer>
     </main>
   );
