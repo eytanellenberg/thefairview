@@ -44,7 +44,6 @@ export async function buildSoccerSnapshot() {
             }
           : null,
 
-        // 🔵 PREGAME — Comparative RAI (proxy, same as NBA for now)
         comparativeRAI: next
           ? {
               delta: 2,
@@ -71,7 +70,6 @@ export async function buildSoccerSnapshot() {
             }
           : null,
 
-        // 🔴 POSTGAME — Comparative PAI
         comparativePAI: last
           ? {
               levers: [
