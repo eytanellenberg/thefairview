@@ -5,6 +5,7 @@ const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
  * IMPORTANT:
  * - Soccer ESPN does NOT support ?dates=
  * - We must rely on the live scoreboard only
+ * - Final games detection must be flexible (FT, completed, post)
  */
 export async function buildSoccerPastGamesSnapshot(
   leagueCode: string,
@@ -34,9 +35,15 @@ export async function buildSoccerPastGamesSnapshot(
       );
       if (!home || !away) continue;
 
-      // ESPN soccer FINAL state
-      const state = event.status?.type?.state;
-      if (state !== "post") continue;
+      // ✅ CORRECT soccer final detection (December-safe)
+      const statusType = event.status?.type;
+      const isFinal =
+        statusType?.completed === true ||
+        statusType?.state === "post" ||
+        (typeof statusType?.detail === "string" &&
+          statusType.detail.toLowerCase().includes("ft"));
+
+      if (!isFinal) continue;
 
       const homeName = home.team.displayName;
       const awayName = away.team.displayName;
@@ -92,7 +99,7 @@ export async function buildSoccerPastGamesSnapshot(
       });
     }
   } catch {
-    // silent fail
+    // silent fail (ESPN instability safe)
   }
 
   return {
