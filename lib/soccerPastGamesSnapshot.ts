@@ -1,115 +1,98 @@
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
 /**
- * Soccer past games snapshot (NBA-like behavior)
- * Looks BACK over the last X days to find played matches
+ * Soccer past games snapshot (ESPN-correct)
+ * IMPORTANT:
+ * - Soccer ESPN does NOT support ?dates=
+ * - We must rely on the live scoreboard only
  */
 export async function buildSoccerPastGamesSnapshot(
   leagueCode: string,
-  lookbackDays: number = 14
+  maxMatches: number = 10
 ) {
   const matches: any[] = [];
-  const seen = new Set<string>();
 
-  const today = new Date();
+  try {
+    const url = `${ESPN_BASE}/soccer/${leagueCode}/scoreboard`;
+    const res = await fetch(url, { next: { revalidate: 1800 } });
+    if (!res.ok) throw new Error("ESPN soccer error");
 
-  for (let i = 0; i < lookbackDays; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
+    const data = await res.json();
+    const events = data?.events ?? [];
 
-    const dateStr = d
-      .toISOString()
-      .slice(0, 10)
-      .replace(/-/g, "");
+    for (const event of events) {
+      if (matches.length >= maxMatches) break;
 
-    try {
-      const url = `${ESPN_BASE}/soccer/${leagueCode}/scoreboard?dates=${dateStr}`;
-      const res = await fetch(url, { next: { revalidate: 1800 } });
-      if (!res.ok) continue;
+      const c = event?.competitions?.[0];
+      if (!c) continue;
 
-      const data = await res.json();
-      const events = data?.events ?? [];
+      const home = c.competitors.find(
+        (x: any) => x.homeAway === "home"
+      );
+      const away = c.competitors.find(
+        (x: any) => x.homeAway === "away"
+      );
+      if (!home || !away) continue;
 
-      for (const event of events) {
-        if (seen.has(event.id)) continue;
+      // ESPN soccer FINAL state
+      const state = event.status?.type?.state;
+      if (state !== "post") continue;
 
-        const c = event?.competitions?.[0];
-        if (!c) continue;
+      const homeName = home.team.displayName;
+      const awayName = away.team.displayName;
 
-        const home = c.competitors.find(
-          (x: any) => x.homeAway === "home"
-        );
-        const away = c.competitors.find(
-          (x: any) => x.homeAway === "away"
-        );
-        if (!home || !away) continue;
+      // 🔵 RAI — reconstructed (NBA-like proxy)
+      const comparativeRAI = {
+        delta: 3,
+        edgeTeam: homeName,
+        levers: [
+          { lever: "Chance creation", advantage: homeName, value: 2 },
+          { lever: "Defensive organization", advantage: awayName, value: 2 },
+          { lever: "Game control", advantage: homeName, value: 3 }
+        ],
+        interpretation:
+          "Slight structural edge expected based on attacking balance and control."
+      };
 
-        const statusRaw =
-          event.status?.type?.name?.toLowerCase?.() ?? "";
-
-        if (!statusRaw.includes("final")) continue;
-
-        seen.add(event.id);
-
-        const homeName = home.team.displayName;
-        const awayName = away.team.displayName;
-
-        // 🔵 RAI — pregame (proxy, NBA-like)
-        const comparativeRAI = {
-          delta: 3,
-          edgeTeam: homeName,
-          levers: [
-            { lever: "Chance creation", advantage: homeName, value: 2 },
-            { lever: "Defensive organization", advantage: awayName, value: 2 },
-            { lever: "Game control", advantage: homeName, value: 3 }
-          ],
-          interpretation:
-            "Slight structural edge expected based on attacking balance and control."
-        };
-
-        // 🔴 PAI — postgame (NBA-like)
-        const comparativePAI = {
-          teams: [
-            {
-              team: homeName,
-              levers: [
-                { lever: "Chance creation", status: "Confirmed as expected" },
-                { lever: "Defensive organization", status: "Weakened vs expectation" },
-                { lever: "Game control", status: "Confirmed as expected" }
-              ]
-            },
-            {
-              team: awayName,
-              levers: [
-                { lever: "Chance creation", status: "Weakened vs expectation" },
-                { lever: "Defensive organization", status: "Confirmed as expected" },
-                { lever: "Game control", status: "Weakened vs expectation" }
-              ]
-            }
-          ],
-          conclusion:
-            "Outcome driven by execution gaps rather than pure structural mismatch."
-        };
-
-        matches.push({
-          match: {
-            id: String(event.id),
-            dateUtc: String(event.date),
-            score: `${home.score} – ${away.score}`,
-            home: { id: String(home.team.id), name: homeName },
-            away: { id: String(away.team.id), name: awayName },
-            venue: c.venue?.fullName
+      // 🔴 PAI — postgame (NBA-like)
+      const comparativePAI = {
+        teams: [
+          {
+            team: homeName,
+            levers: [
+              { lever: "Chance creation", status: "Confirmed as expected" },
+              { lever: "Defensive organization", status: "Weakened vs expectation" },
+              { lever: "Game control", status: "Confirmed as expected" }
+            ]
           },
-          comparativeRAI,
-          comparativePAI
-        });
-      }
-    } catch {
-      // silent
-    }
+          {
+            team: awayName,
+            levers: [
+              { lever: "Chance creation", status: "Weakened vs expectation" },
+              { lever: "Defensive organization", status: "Confirmed as expected" },
+              { lever: "Game control", status: "Weakened vs expectation" }
+            ]
+          }
+        ],
+        conclusion:
+          "Outcome driven by execution gaps rather than pure structural mismatch."
+      };
 
-    // Stop early once we have enough matches
-    if (matches.length >= 10) break;
+      matches.push({
+        match: {
+          id: String(event.id),
+          dateUtc: String(event.date),
+          score: `${home.score} – ${away.score}`,
+          home: { id: String(home.team.id), name: homeName },
+          away: { id: String(away.team.id), name: awayName },
+          venue: c.venue?.fullName
+        },
+        comparativeRAI,
+        comparativePAI
+      });
+    }
+  } catch {
+    // silent fail
   }
 
   return {
