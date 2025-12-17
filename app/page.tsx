@@ -53,6 +53,13 @@ export default function HomePage() {
           >
             🏈 <strong>NFL</strong> — last game analysis (FREE)
           </Link>
+
+          <Link
+            href="/soccer"
+            className="border rounded p-3 hover:bg-gray-50"
+          >
+            ⚽ <strong>Soccer</strong> — European leagues (RAI / PAI)
+          </Link>
         </div>
       </div>
 
