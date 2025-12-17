@@ -11,14 +11,17 @@ const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
 /**
  * ESPN sport path mapping
- * IMPORTANT: soccer is league-dependent, but ESPN exposes a generic soccer path
- * that works for team schedules and scoreboards.
+ * IMPORTANT:
+ * - Soccer MUST be league-specific (eng.1, esp.1, etc.)
+ * - Defaulting to Premier League (eng.1) for now
  */
-function sportPath(sport: "nba" | "nfl" | "mlb" | "soccer") {
+function sportPath(
+  sport: "nba" | "nfl" | "mlb" | "soccer"
+) {
   if (sport === "nba") return "basketball/nba";
   if (sport === "nfl") return "football/nfl";
   if (sport === "mlb") return "baseball/mlb";
-  if (sport === "soccer") return "soccer";
+  if (sport === "soccer") return "soccer/eng.1"; // Premier League
   return "";
 }
 
