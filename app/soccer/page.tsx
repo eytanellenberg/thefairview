@@ -1,30 +1,14 @@
 import { buildSoccerSnapshot } from "@/lib/soccerSnapshot";
 
-function matchKey(dateUtc: string, a: string, b: string) {
-  return `${dateUtc}-${[a, b].sort().join("-")}`;
-}
-
 export default async function SoccerPage() {
   const data = await buildSoccerSnapshot();
 
-  const matches: Record<string, any[]> = {};
-
-  for (const entry of data.snapshot) {
-    if (!entry.lastGame) continue;
-
-    const key = matchKey(
-      entry.lastGame.dateUtc,
-      entry.team.id,
-      entry.lastGame.opponentId
+  const games = data.snapshot
+    .filter((e: any) => e.lastGame)
+    .sort(
+      (a: any, b: any) =>
+        b.lastGame.dateUtc.localeCompare(a.lastGame.dateUtc)
     );
-
-    if (!matches[key]) matches[key] = [];
-    matches[key].push(entry);
-  }
-
-  const playedMatches = Object.values(matches).filter(
-    (m) => m.length === 2
-  );
 
   return (
     <main className="p-6 max-w-5xl mx-auto text-gray-900 bg-white">
@@ -37,34 +21,30 @@ export default async function SoccerPage() {
         Post-game execution (PAI) explains what actually decided the match.
       </p>
 
-      <h2 className="text-lg font-semibold mb-4">Played matches</h2>
+      <h2 className="text-lg font-semibold mb-4">Recent matches</h2>
 
-      {playedMatches.length === 0 && (
+      {games.length === 0 && (
         <p className="text-sm text-gray-500">
           No matches available yet. Soccer teams will appear here once ESPN data
           is connected.
         </p>
       )}
 
-      {playedMatches.map((match, index) => {
-        const teamA = match[0];
-        const teamB = match[1];
+      {games.map((entry: any, index: number) => (
+        <div
+          key={index}
+          className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
+        >
+          <h3 className="font-medium mb-1">
+            {entry.team.name} vs {entry.lastGame.opponent}
+          </h3>
 
-        return (
-          <div
-            key={index}
-            className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
-          >
-            {/* Match header */}
-            <h3 className="font-medium mb-1">
-              {teamA.team.name} vs {teamB.team.name}
-            </h3>
+          <p className="text-sm mb-3">
+            Final score: {entry.lastGame.score}
+          </p>
 
-            <p className="text-sm mb-3">
-              Final score: {teamA.lastGame.score}
-            </p>
-
-            {/* 🔵 RAI */}
+          {/* 🔵 RAI */}
+          {entry.comparativeRAI && (
             <div className="mb-4">
               <h4 className="font-semibold text-sm mb-1">
                 Pregame — Comparative Readiness (RAI)
@@ -73,12 +53,13 @@ export default async function SoccerPage() {
               <p className="text-sm mb-1">
                 RAI edge:{" "}
                 <strong>
-                  {teamA.comparativeRAI.edgeTeam} +{teamA.comparativeRAI.delta}
+                  {entry.comparativeRAI.edgeTeam} +
+                  {entry.comparativeRAI.delta}
                 </strong>
               </p>
 
               <ul className="list-disc ml-5 text-sm">
-                {teamA.comparativeRAI.levers.map(
+                {entry.comparativeRAI.levers.map(
                   (l: any, i: number) => (
                     <li key={i}>
                       {l.lever}: {l.advantage} +{l.value}
@@ -87,35 +68,32 @@ export default async function SoccerPage() {
                 )}
               </ul>
             </div>
+          )}
 
-            {/* 🔴 PAI */}
+          {/* 🔴 PAI */}
+          {entry.comparativePAI && (
             <div className="mb-2">
               <h4 className="font-semibold text-sm mb-1">
                 Postgame — Comparative Execution (PAI)
               </h4>
 
-              {[teamA, teamB].map((t: any, j: number) => (
-                <div key={j} className="mb-2">
-                  <strong>{t.team.name}</strong>
-                  <ul className="list-disc ml-5 text-sm">
-                    {t.comparativePAI.levers.map(
-                      (l: any, k: number) => (
-                        <li key={k}>
-                          {l.lever}: {l.status}
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              ))}
+              <ul className="list-disc ml-5 text-sm">
+                {entry.comparativePAI.levers.map(
+                  (l: any, i: number) => (
+                    <li key={i}>
+                      {l.lever}: {l.status}
+                    </li>
+                  )
+                )}
+              </ul>
             </div>
+          )}
 
-            <p className="text-sm italic text-gray-600">
-              {teamA.comparativePAI.conclusion}
-            </p>
-          </div>
-        );
-      })}
+          <p className="text-sm italic text-gray-600">
+            {entry.comparativePAI?.conclusion}
+          </p>
+        </div>
+      ))}
 
       <footer className="text-xs text-gray-500 mt-10">
         FAIR — structure over narrative · eytan_ellenberg@yahoo.fr
