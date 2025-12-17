@@ -1,132 +1,115 @@
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
 /**
- * Soccer past games snapshot (NBA-like logic)
- * League-based, event-first
- *
- * @param leagueCode ESPN league code (eng.1, esp.1, ita.1, ger.1, fra.1)
+ * Soccer past games snapshot (NBA-like behavior)
+ * Looks BACK over the last X days to find played matches
  */
 export async function buildSoccerPastGamesSnapshot(
-  leagueCode: string
+  leagueCode: string,
+  lookbackDays: number = 14
 ) {
   const matches: any[] = [];
+  const seen = new Set<string>();
 
-  try {
-    const url = `${ESPN_BASE}/soccer/${leagueCode}/scoreboard`;
-    const res = await fetch(url, { next: { revalidate: 1800 } });
-    if (!res.ok) throw new Error("ESPN soccer error");
+  const today = new Date();
 
-    const data = await res.json();
-    const events = data?.events ?? [];
+  for (let i = 0; i < lookbackDays; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
 
-    for (const event of events) {
-      const c = event?.competitions?.[0];
-      if (!c) continue;
+    const dateStr = d
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, "");
 
-      const home = c.competitors.find(
-        (x: any) => x.homeAway === "home"
-      );
-      const away = c.competitors.find(
-        (x: any) => x.homeAway === "away"
-      );
-      if (!home || !away) continue;
+    try {
+      const url = `${ESPN_BASE}/soccer/${leagueCode}/scoreboard?dates=${dateStr}`;
+      const res = await fetch(url, { next: { revalidate: 1800 } });
+      if (!res.ok) continue;
 
-      const statusRaw =
-        event.status?.type?.name?.toLowerCase?.() ?? "";
+      const data = await res.json();
+      const events = data?.events ?? [];
 
-      if (!statusRaw.includes("final")) continue;
+      for (const event of events) {
+        if (seen.has(event.id)) continue;
 
-      const homeName = String(home.team.displayName);
-      const awayName = String(away.team.displayName);
+        const c = event?.competitions?.[0];
+        if (!c) continue;
 
-      // 🔵 RAI — reconstructed pregame comparative readiness
-      const comparativeRAI = {
-        delta: 3,
-        edgeTeam: homeName,
-        levers: [
-          {
-            lever: "Chance creation",
-            advantage: homeName,
-            value: 2
+        const home = c.competitors.find(
+          (x: any) => x.homeAway === "home"
+        );
+        const away = c.competitors.find(
+          (x: any) => x.homeAway === "away"
+        );
+        if (!home || !away) continue;
+
+        const statusRaw =
+          event.status?.type?.name?.toLowerCase?.() ?? "";
+
+        if (!statusRaw.includes("final")) continue;
+
+        seen.add(event.id);
+
+        const homeName = home.team.displayName;
+        const awayName = away.team.displayName;
+
+        // 🔵 RAI — pregame (proxy, NBA-like)
+        const comparativeRAI = {
+          delta: 3,
+          edgeTeam: homeName,
+          levers: [
+            { lever: "Chance creation", advantage: homeName, value: 2 },
+            { lever: "Defensive organization", advantage: awayName, value: 2 },
+            { lever: "Game control", advantage: homeName, value: 3 }
+          ],
+          interpretation:
+            "Slight structural edge expected based on attacking balance and control."
+        };
+
+        // 🔴 PAI — postgame (NBA-like)
+        const comparativePAI = {
+          teams: [
+            {
+              team: homeName,
+              levers: [
+                { lever: "Chance creation", status: "Confirmed as expected" },
+                { lever: "Defensive organization", status: "Weakened vs expectation" },
+                { lever: "Game control", status: "Confirmed as expected" }
+              ]
+            },
+            {
+              team: awayName,
+              levers: [
+                { lever: "Chance creation", status: "Weakened vs expectation" },
+                { lever: "Defensive organization", status: "Confirmed as expected" },
+                { lever: "Game control", status: "Weakened vs expectation" }
+              ]
+            }
+          ],
+          conclusion:
+            "Outcome driven by execution gaps rather than pure structural mismatch."
+        };
+
+        matches.push({
+          match: {
+            id: String(event.id),
+            dateUtc: String(event.date),
+            score: `${home.score} – ${away.score}`,
+            home: { id: String(home.team.id), name: homeName },
+            away: { id: String(away.team.id), name: awayName },
+            venue: c.venue?.fullName
           },
-          {
-            lever: "Defensive organization",
-            advantage: awayName,
-            value: 2
-          },
-          {
-            lever: "Game control",
-            advantage: homeName,
-            value: 3
-          }
-        ],
-        interpretation:
-          "Slight structural edge expected based on attacking balance and control."
-      };
-
-      // 🔴 PAI — postgame comparative execution (NBA-like)
-      const comparativePAI = {
-        teams: [
-          {
-            team: homeName,
-            levers: [
-              {
-                lever: "Chance creation",
-                status: "Confirmed as expected"
-              },
-              {
-                lever: "Defensive organization",
-                status: "Weakened vs expectation"
-              },
-              {
-                lever: "Game control",
-                status: "Confirmed as expected"
-              }
-            ]
-          },
-          {
-            team: awayName,
-            levers: [
-              {
-                lever: "Chance creation",
-                status: "Weakened vs expectation"
-              },
-              {
-                lever: "Defensive organization",
-                status: "Confirmed as expected"
-              },
-              {
-                lever: "Game control",
-                status: "Weakened vs expectation"
-              }
-            ]
-          }
-        ],
-        conclusion:
-          "Outcome driven by execution gaps rather than pure structural mismatch."
-      };
-
-      matches.push({
-        match: {
-          id: String(event.id),
-          dateUtc: String(event.date),
-          score: `${home.score} – ${away.score}`,
-          home: {
-            id: String(home.team.id),
-            name: homeName
-          },
-          away: {
-            id: String(away.team.id),
-            name: awayName
-          },
-          venue: c.venue?.fullName
-        },
-        comparativeRAI,
-        comparativePAI
-      });
+          comparativeRAI,
+          comparativePAI
+        });
+      }
+    } catch {
+      // silent
     }
-  } catch {
-    // silent fail — page handles empty state
+
+    // Stop early once we have enough matches
+    if (matches.length >= 10) break;
   }
 
   return {
