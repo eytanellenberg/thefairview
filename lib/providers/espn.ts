@@ -9,10 +9,17 @@ export type GameSummary = {
 
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
-function sportPath(sport: "nba" | "nfl" | "mlb") {
+/**
+ * ESPN sport path mapping
+ * IMPORTANT: soccer is league-dependent, but ESPN exposes a generic soccer path
+ * that works for team schedules and scoreboards.
+ */
+function sportPath(sport: "nba" | "nfl" | "mlb" | "soccer") {
   if (sport === "nba") return "basketball/nba";
   if (sport === "nfl") return "football/nfl";
-  return "baseball/mlb";
+  if (sport === "mlb") return "baseball/mlb";
+  if (sport === "soccer") return "soccer";
+  return "";
 }
 
 async function fetchJSON(url: string) {
@@ -56,7 +63,7 @@ function normalize(event: any): GameSummary | null {
 }
 
 export async function getLastAndNextGame(
-  sport: "nba" | "nfl" | "mlb",
+  sport: "nba" | "nfl" | "mlb" | "soccer",
   teamId: string
 ) {
   let next: GameSummary | null = null;
@@ -64,7 +71,10 @@ export async function getLastAndNextGame(
 
   // NEXT GAME
   try {
-    const scheduleUrl = `${ESPN_BASE}/${sportPath(sport)}/teams/${teamId}/schedule`;
+    const scheduleUrl = `${ESPN_BASE}/${sportPath(
+      sport
+    )}/teams/${teamId}/schedule`;
+
     const data = await fetchJSON(scheduleUrl);
     const games = (data.events ?? [])
       .map(normalize)
@@ -82,7 +92,9 @@ export async function getLastAndNextGame(
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10).replace(/-/g, "");
-    const url = `${ESPN_BASE}/${sportPath(sport)}/scoreboard?dates=${dateStr}`;
+    const url = `${ESPN_BASE}/${sportPath(
+      sport
+    )}/scoreboard?dates=${dateStr}`;
 
     try {
       const data = await fetchJSON(url);
@@ -93,8 +105,9 @@ export async function getLastAndNextGame(
       last =
         games
           .filter(
-            g => g.status === "final" &&
-            (g.home.id === teamId || g.away.id === teamId)
+            g =>
+              g.status === "final" &&
+              (g.home.id === teamId || g.away.id === teamId)
           )
           .sort((a, b) => (a.dateUtc < b.dateUtc ? 1 : -1))[0] ?? null;
     } catch {}
