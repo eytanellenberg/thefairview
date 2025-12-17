@@ -1,14 +1,14 @@
 import { buildSoccerPastGamesSnapshot } from "@/lib/soccerPastGamesSnapshot";
 
-export default async function SoccerMLSPastGamesPage() {
-  // MLS is active → guarantees past games
-  const data = await buildSoccerPastGamesSnapshot("usa.1");
+export default async function PremierLeaguePage() {
+  // ESPN code for Premier League
+  const data = await buildSoccerPastGamesSnapshot("eng.1");
   const matches = data.matches ?? [];
 
   return (
     <main className="p-6 max-w-5xl mx-auto text-gray-900 bg-white">
       <h1 className="text-2xl font-semibold mb-2">
-        MLS — Match-based FAIR Analysis
+        Premier League — Match-based FAIR Analysis
       </h1>
 
       <p className="text-sm text-gray-600 mb-6">
@@ -22,7 +22,7 @@ export default async function SoccerMLSPastGamesPage() {
 
       {matches.length === 0 && (
         <p className="text-sm text-gray-500">
-          No played matches available yet.
+          No played matches available yet (off-season).
         </p>
       )}
 
@@ -95,7 +95,8 @@ export default async function SoccerMLSPastGamesPage() {
       ))}
 
       <footer className="text-xs text-gray-500 mt-10">
-        Data source: ESPN · League: MLS · FAIR — structure over narrative ·
+        Data source: ESPN · League: Premier League ·
+        FAIR — structure over narrative ·
         eytan_ellenberg@yahoo.fr
       </footer>
     </main>
