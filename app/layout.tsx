@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "The Fair View",
@@ -14,6 +15,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-white text-gray-900">
         {children}
+        <Analytics />
       </body>
     </html>
   );
