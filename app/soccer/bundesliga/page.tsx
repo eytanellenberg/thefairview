@@ -1,55 +1,95 @@
-import Link from "next/link";
+import { buildSoccerPastGamesSnapshot } from "@/lib/soccerPastGamesSnapshot";
 
-export default function BundesligaPage() {
+export default async function BundesligaPage() {
+  const data = await buildSoccerPastGamesSnapshot("ger.1");
+  const matches = data.matches ?? [];
+
   return (
-    <main className="p-6 max-w-4xl mx-auto text-gray-900 bg-white">
-      <h1 className="text-2xl font-semibold mb-4">
-        Bundesliga
+    <main className="p-6 max-w-5xl mx-auto text-gray-900 bg-white">
+      <h1 className="text-2xl font-semibold mb-2">
+        Bundesliga — Match-based FAIR Analysis
       </h1>
 
-      <p className="text-sm text-gray-700 mb-6">
-        Match-by-match causal analysis using the FAIR framework.
-        <br />
-        Pre-game structural comparison (RAI) and post-game attribution (PAI).
+      <p className="text-sm text-gray-600 mb-6">
+        One card per match. Pre-game readiness (RAI) explains what was expected.
+        Post-game execution (PAI) explains what actually decided the match.
       </p>
 
-      {/* MATCH LIST */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">
-          Matches
-        </h2>
+      <h2 className="text-lg font-semibold mb-4">
+        Played matches
+      </h2>
 
-        <div className="flex flex-col gap-2">
-          <div className="border rounded p-3 text-sm text-gray-500">
-            Bayern Munich vs Borussia Dortmund — analysis coming soon
+      {matches.length === 0 && (
+        <p className="text-sm text-gray-500">
+          No played matches available yet (off-season).
+        </p>
+      )}
+
+      {matches.map((m: any, index: number) => (
+        <div
+          key={index}
+          className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
+        >
+          <h3 className="font-medium mb-1">
+            {m.match.home.name} vs {m.match.away.name}
+          </h3>
+
+          <p className="text-sm mb-3">
+            Final score: {m.match.score}
+          </p>
+
+          {/* RAI */}
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm mb-1">
+              Pregame — Comparative Readiness (RAI)
+            </h4>
+
+            <p className="text-sm mb-1">
+              RAI edge:{" "}
+              <strong>
+                {m.comparativeRAI.edgeTeam} +{m.comparativeRAI.delta}
+              </strong>
+            </p>
+
+            <ul className="list-disc ml-5 text-sm">
+              {m.comparativeRAI.levers.map((l: any, i: number) => (
+                <li key={i}>
+                  {l.lever}: {l.advantage} +{l.value}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="border rounded p-3 text-sm text-gray-500">
-            RB Leipzig vs Bayer Leverkusen — analysis coming soon
+          {/* PAI */}
+          <div className="mb-2">
+            <h4 className="font-semibold text-sm mb-1">
+              Postgame — Comparative Execution (PAI)
+            </h4>
+
+            {m.comparativePAI.teams.map((t: any, j: number) => (
+              <div key={j} className="mb-2">
+                <strong>{t.team}</strong>
+                <ul className="list-disc ml-5 text-sm">
+                  {t.levers.map((l: any, k: number) => (
+                    <li key={k}>
+                      {l.lever}: {l.status}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <p className="text-sm italic text-gray-600 mt-2">
+              {m.comparativePAI.conclusion}
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* METHOD REMINDER */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-2">
-          FAIR method
-        </h2>
-        <ul className="list-disc ml-6 text-sm text-gray-700">
-          <li>
-            <strong>RAI</strong> — expected structural edge before kickoff
-          </li>
-          <li>
-            <strong>Levers</strong> — team strength, context, squad availability
-          </li>
-          <li>
-            <strong>PAI</strong> — causal explanation of the final result
-          </li>
-        </ul>
-      </div>
+      ))}
 
       <footer className="text-xs text-gray-500 mt-10">
-        Data source: ESPN · League: Bundesliga
+        Data source: ESPN · League: Bundesliga ·
+        FAIR — structure over narrative ·
+        eytan_ellenberg@yahoo.fr
       </footer>
     </main>
   );
