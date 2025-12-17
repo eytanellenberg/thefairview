@@ -36,53 +36,59 @@ export default async function SoccerPage() {
           </h3>
 
           <p className="text-sm mb-3">
-            Final score: {m.match.home.score} – {m.match.away.score}
+            {m.match.status === "scheduled"
+              ? "Scheduled match"
+              : `Final score: ${m.match.home.score} – ${m.match.away.score}`}
           </p>
 
-          {/* 🔵 RAI */}
-          <div className="mb-4">
-            <h4 className="font-semibold text-sm mb-1">
-              Pregame — Comparative Readiness (RAI)
-            </h4>
+          {/* 🔵 RAI (always available) */}
+          {m.comparativeRAI && (
+            <div className="mb-4">
+              <h4 className="font-semibold text-sm mb-1">
+                Pregame — Comparative Readiness (RAI)
+              </h4>
 
-            <p className="text-sm mb-1">
-              RAI edge:{" "}
-              <strong>
-                {m.comparativeRAI.edgeTeam} +{m.comparativeRAI.delta}
-              </strong>
-            </p>
+              <p className="text-sm mb-1">
+                RAI edge:{" "}
+                <strong>
+                  {m.comparativeRAI.edgeTeam} +{m.comparativeRAI.delta}
+                </strong>
+              </p>
 
-            <ul className="list-disc ml-5 text-sm">
-              {m.comparativeRAI.levers.map(
-                (l: any, i: number) => (
-                  <li key={i}>
-                    {l.lever}: {l.advantage} +{l.value}
-                  </li>
-                )
-              )}
-            </ul>
-          </div>
+              <ul className="list-disc ml-5 text-sm">
+                {m.comparativeRAI.levers.map(
+                  (l: any, i: number) => (
+                    <li key={i}>
+                      {l.lever}: {l.advantage} +{l.value}
+                    </li>
+                  )
+                )}
+              </ul>
+            </div>
+          )}
 
-          {/* 🔴 PAI */}
-          <div className="mb-2">
-            <h4 className="font-semibold text-sm mb-1">
-              Postgame — Comparative Execution (PAI)
-            </h4>
+          {/* 🔴 PAI — ONLY if final */}
+          {m.comparativePAI && (
+            <div className="mb-2">
+              <h4 className="font-semibold text-sm mb-1">
+                Postgame — Comparative Execution (PAI)
+              </h4>
 
-            <ul className="list-disc ml-5 text-sm">
-              {m.comparativePAI.levers.map(
-                (l: any, i: number) => (
-                  <li key={i}>
-                    {l.lever}: {l.status}
-                  </li>
-                )
-              )}
-            </ul>
-          </div>
+              <ul className="list-disc ml-5 text-sm">
+                {m.comparativePAI.levers.map(
+                  (l: any, i: number) => (
+                    <li key={i}>
+                      {l.lever}: {l.status}
+                    </li>
+                  )
+                )}
+              </ul>
 
-          <p className="text-sm italic text-gray-600">
-            {m.comparativePAI.conclusion}
-          </p>
+              <p className="text-sm italic text-gray-600">
+                {m.comparativePAI.conclusion}
+              </p>
+            </div>
+          )}
         </div>
       ))}
 
