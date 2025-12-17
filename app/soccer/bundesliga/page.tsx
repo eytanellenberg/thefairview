@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { buildSoccerPastGamesSnapshot } from "@/lib/soccerPastGamesSnapshot";
 
 export default async function BundesligaPage() {
