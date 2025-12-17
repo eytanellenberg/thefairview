@@ -1,10 +1,14 @@
-import { GameSummary } from "@/lib/providers/espn";
-
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
 
 /**
- * Premier League scoreboard snapshot
- * Source: ESPN /soccer/eng.1
+ * League-based Soccer Snapshot (Premier League)
+ * Source: ESPN scoreboard — soccer/eng.1
+ *
+ * Design:
+ * - Soccer is event-first (not team-first like NBA)
+ * - We consume the league scoreboard directly
+ * - We keep FINAL and SCHEDULED matches
+ * - We ignore IN_PROGRESS to avoid partial noise
  */
 export async function buildSoccerLeagueSnapshot() {
   const snapshot: any[] = [];
@@ -12,46 +16,60 @@ export async function buildSoccerLeagueSnapshot() {
   try {
     const url = `${ESPN_BASE}/soccer/eng.1/scoreboard`;
     const res = await fetch(url, { next: { revalidate: 900 } });
-    if (!res.ok) throw new Error("ESPN soccer error");
+
+    if (!res.ok) {
+      throw new Error(`ESPN soccer error ${res.status}`);
+    }
 
     const data = await res.json();
-    const events = data.events ?? [];
+    const events = data?.events ?? [];
 
     for (const event of events) {
-      const c = event?.competitions?.[0];
-      if (!c) continue;
+      const competition = event?.competitions?.[0];
+      if (!competition) continue;
 
-      const home = c.competitors.find((x: any) => x.homeAway === "home");
-      const away = c.competitors.find((x: any) => x.homeAway === "away");
+      const home = competition.competitors.find(
+        (c: any) => c.homeAway === "home"
+      );
+      const away = competition.competitors.find(
+        (c: any) => c.homeAway === "away"
+      );
       if (!home || !away) continue;
 
-      const t = event.status?.type?.name?.toLowerCase?.() ?? "";
+      const statusRaw =
+        event.status?.type?.name?.toLowerCase?.() ?? "";
+
       const status =
-        t.includes("final")
+        statusRaw.includes("final")
           ? "final"
-          : t.includes("in")
+          : statusRaw.includes("in")
           ? "in_progress"
           : "scheduled";
 
-      if (status !== "final") continue;
+      // Ignore live games to keep clean cards
+      if (status === "in_progress") continue;
 
       snapshot.push({
         match: {
           id: String(event.id),
           dateUtc: String(event.date),
+          status,
           home: {
             id: String(home.team.id),
             name: String(home.team.displayName),
-            score: Number(home.score)
+            score:
+              home.score != null ? Number(home.score) : undefined
           },
           away: {
             id: String(away.team.id),
             name: String(away.team.displayName),
-            score: Number(away.score)
-          }
+            score:
+              away.score != null ? Number(away.score) : undefined
+          },
+          venue: competition.venue?.fullName
         },
 
-        // 🔵 RAI (proxy — same logic as NBA for now)
+        // 🔵 PRE-GAME — RAI (proxy, FAIR-compatible)
         comparativeRAI: {
           delta: 2,
           edgeTeam: home.team.displayName,
@@ -73,32 +91,35 @@ export async function buildSoccerLeagueSnapshot() {
             }
           ],
           interpretation:
-            "Structural edge estimated from possession and chance profile."
+            "Structural edge estimated from possession balance and chance profile."
         },
 
-        // 🔴 PAI (proxy)
-        comparativePAI: {
-          levers: [
-            {
-              lever: "Chance conversion",
-              status: "Decisive"
-            },
-            {
-              lever: "Defensive transitions",
-              status: "Confirmed as expected"
-            },
-            {
-              lever: "Game control",
-              status: "Below expectation"
-            }
-          ],
-          conclusion:
-            "Match outcome primarily driven by execution in key moments."
-        }
+        // 🔴 POST-GAME — PAI (only if FINAL)
+        comparativePAI:
+          status === "final"
+            ? {
+                levers: [
+                  {
+                    lever: "Chance conversion",
+                    status: "Decisive"
+                  },
+                  {
+                    lever: "Defensive transitions",
+                    status: "Confirmed as expected"
+                  },
+                  {
+                    lever: "Game control",
+                    status: "Below expectation"
+                  }
+                ],
+                conclusion:
+                  "Match outcome primarily driven by execution in key moments."
+              }
+            : null
       });
     }
   } catch {
-    // silent fail
+    // Silent fail — UI fallback handles empty snapshot
   }
 
   return {
