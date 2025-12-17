@@ -1,100 +1,94 @@
-import { buildSoccerLeagueSnapshot } from "@/lib/soccerLeagueSnapshot";
+import Link from "next/link";
 
-export default async function SoccerPage() {
-  const data = await buildSoccerLeagueSnapshot();
-  const matches = data.snapshot ?? [];
-
+export default function SoccerHomePage() {
   return (
-    <main className="p-6 max-w-5xl mx-auto text-gray-900 bg-white">
+    <main className="p-6 max-w-4xl mx-auto text-gray-900 bg-white">
       <h1 className="text-2xl font-semibold mb-2">
-        Soccer — Match-based FAIR Analysis
+        Soccer — European & US Leagues
       </h1>
 
-      <p className="text-sm text-gray-600 mb-6">
-        One card per match. Pre-game readiness (RAI) explains what was expected.
-        Post-game execution (PAI) explains what actually decided the match.
+      <p className="text-sm text-gray-700 mb-6">
+        FAIR applies the same causal framework used in NBA and NFL to football.
+        <br />
+        Match-based analysis. Comparative. Non-predictive.
       </p>
 
-      <h2 className="text-lg font-semibold mb-4">
-        Recent matches — {data.league}
-      </h2>
+      {/* LEAGUES */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-3">
+          Select a league
+        </h2>
 
-      {matches.length === 0 && (
-        <p className="text-sm text-gray-500">
-          No matches available at the moment.
-        </p>
-      )}
+        <div className="flex flex-col gap-2">
+          {/* EUROPE */}
+          <Link
+            href="/soccer/premier-league"
+            className="border rounded p-3 hover:bg-gray-50"
+          >
+            🇬🇧 <strong>Premier League</strong>
+          </Link>
 
-      {matches.map((m: any, index: number) => (
-        <div
-          key={index}
-          className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
-        >
-          {/* Match header */}
-          <h3 className="font-medium mb-1">
-            {m.match.home.name} vs {m.match.away.name}
-          </h3>
+          <Link
+            href="/soccer/la-liga"
+            className="border rounded p-3 hover:bg-gray-50"
+          >
+            🇪🇸 <strong>La Liga</strong>
+          </Link>
 
-          <p className="text-sm mb-3">
-            {m.match.status === "scheduled"
-              ? "Scheduled match"
-              : `Final score: ${m.match.home.score} – ${m.match.away.score}`}
-          </p>
+          <Link
+            href="/soccer/bundesliga"
+            className="border rounded p-3 hover:bg-gray-50"
+          >
+            🇩🇪 <strong>Bundesliga</strong>
+          </Link>
 
-          {/* 🔵 RAI (always available) */}
-          {m.comparativeRAI && (
-            <div className="mb-4">
-              <h4 className="font-semibold text-sm mb-1">
-                Pregame — Comparative Readiness (RAI)
-              </h4>
+          <Link
+            href="/soccer/serie-a"
+            className="border rounded p-3 hover:bg-gray-50"
+          >
+            🇮🇹 <strong>Serie A</strong>
+          </Link>
 
-              <p className="text-sm mb-1">
-                RAI edge:{" "}
-                <strong>
-                  {m.comparativeRAI.edgeTeam} +{m.comparativeRAI.delta}
-                </strong>
-              </p>
+          <Link
+            href="/soccer/ligue-1"
+            className="border rounded p-3 hover:bg-gray-50"
+          >
+            🇫🇷 <strong>Ligue 1</strong>
+          </Link>
 
-              <ul className="list-disc ml-5 text-sm">
-                {m.comparativeRAI.levers.map(
-                  (l: any, i: number) => (
-                    <li key={i}>
-                      {l.lever}: {l.advantage} +{l.value}
-                    </li>
-                  )
-                )}
-              </ul>
-            </div>
-          )}
-
-          {/* 🔴 PAI — ONLY if final */}
-          {m.comparativePAI && (
-            <div className="mb-2">
-              <h4 className="font-semibold text-sm mb-1">
-                Postgame — Comparative Execution (PAI)
-              </h4>
-
-              <ul className="list-disc ml-5 text-sm">
-                {m.comparativePAI.levers.map(
-                  (l: any, i: number) => (
-                    <li key={i}>
-                      {l.lever}: {l.status}
-                    </li>
-                  )
-                )}
-              </ul>
-
-              <p className="text-sm italic text-gray-600">
-                {m.comparativePAI.conclusion}
-              </p>
-            </div>
-          )}
+          {/* USA */}
+          <Link
+            href="/soccer/mls"
+            className="border rounded p-3 hover:bg-gray-50"
+          >
+            🇺🇸 <strong>MLS</strong>
+          </Link>
         </div>
-      ))}
+      </div>
+
+      {/* METHOD */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-2">
+          Method
+        </h2>
+        <ul className="list-disc ml-6 text-sm text-gray-700">
+          <li>
+            <strong>RAI</strong> — structural edge before kickoff
+          </li>
+          <li>
+            <strong>3 levers</strong> — team strength, context, availability
+          </li>
+          <li>
+            <strong>PAI</strong> — causal explanation of the final result
+          </li>
+        </ul>
+        <p className="text-sm text-gray-600 mt-2">
+          Data source: ESPN · FAIR causal framework
+        </p>
+      </div>
 
       <footer className="text-xs text-gray-500 mt-10">
-        Data source: ESPN · FAIR — structure over narrative ·
-        eytan_ellenberg@yahoo.fr
+        FAIR — structure over narrative · eytan_ellenberg@yahoo.fr
       </footer>
     </main>
   );
