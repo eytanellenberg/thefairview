@@ -1,109 +1,92 @@
 import { NBA_TEAMS } from "@/lib/data/nbaTeams";
-import { getLastAndNextGame } from "@/lib/providers/espn";
+import { getLastGame } from "@/lib/providers/espn";
+
+type TeamSnapshot = {
+  team: {
+    id: string;
+    name: string;
+  };
+  score: string;
+};
+
+type MatchSnapshot = {
+  dateUtc: string;
+  home: TeamSnapshot;
+  away: TeamSnapshot;
+};
 
 export async function buildNBASnapshot() {
-  // 🔍 TRACE D’EXÉCUTION — pour vérifier que la fonction tourne bien à chaque requête
-  console.log(
-    "NBA snapshot rebuilt at",
-    new Date().toISOString()
-  );
-
-  const snapshot: any[] = [];
+  const matches = new Map<string, MatchSnapshot>();
 
   for (const team of NBA_TEAMS) {
-    try {
-      const { last, next } = await getLastAndNextGame("nba", team.id);
+    const last = await getLastGame("nba", team.id);
+    if (!last) continue;
 
-      const opponentName =
-        last
-          ? last.home.id === team.id
-            ? last.away.name
-            : last.home.name
-          : next
-          ? next.home.id === team.id
-            ? next.away.name
-            : next.home.name
-          : "Unknown";
+    const key = `${last.dateUtc}-${[last.home.id, last.away.id]
+      .sort()
+      .join("-")}`;
 
-      snapshot.push({
-        team: {
-          id: team.id,
-          name: team.name,
-        },
-
-        lastGame: last
-          ? {
-              dateUtc: last.dateUtc,
-              score:
-                last.home.id === team.id
-                  ? `${last.home.score} – ${last.away.score}`
-                  : `${last.away.score} – ${last.home.score}`,
-              opponent: opponentName,
-              opponentId:
-                last.home.id === team.id
-                  ? last.away.id
-                  : last.home.id,
-            }
-          : null,
-
-        // 🔵 PREGAME — Comparative RAI (FREE proxy)
-        comparativeRAI: next
-          ? {
-              delta: 3,
-              edgeTeam: team.name,
-              levers: [
-                {
-                  lever: "Offensive spacing",
-                  advantage: team.name,
-                  value: 2,
-                },
-                {
-                  lever: "Shot quality creation",
-                  advantage: team.name,
-                  value: 3,
-                },
-                {
-                  lever: "PnR matchup stress",
-                  advantage: opponentName,
-                  value: 6,
-                },
-              ],
-              interpretation:
-                "Slight structural edge expected based on offensive organization and shot profile.",
-            }
-          : null,
-
-        // 🔴 POSTGAME — Comparative PAI
-        comparativePAI: last
-          ? {
-              levers: [
-                {
-                  lever: "Offensive spacing",
-                  status: "Weakened vs expectation",
-                },
-                {
-                  lever: "Shot quality creation",
-                  status: "Weakened vs expectation",
-                },
-                {
-                  lever: "PnR matchup stress",
-                  status: "Confirmed as expected",
-                },
-              ],
-              conclusion:
-                "Victory achieved despite weaker-than-expected offensive execution.",
-            }
-          : null,
+    if (!matches.has(key)) {
+      matches.set(key, {
+        dateUtc: last.dateUtc,
+        home: null as any,
+        away: null as any,
       });
-    } catch (e) {
-      // skip team on ESPN error
-      console.error("NBA snapshot error for team", team.id, e);
     }
+
+    const match = matches.get(key)!;
+    const isHome = last.home.id === team.id;
+
+    const teamBlock: TeamSnapshot = {
+      team: {
+        id: team.id,
+        name: team.name,
+      },
+      score: isHome
+        ? `${last.home.score} – ${last.away.score}`
+        : `${last.away.score} – ${last.home.score}`,
+    };
+
+    if (isHome) match.home = teamBlock;
+    else match.away = teamBlock;
   }
+
+  const snapshot = Array.from(matches.values()).filter(
+    (m) => m.home && m.away
+  );
 
   return {
     sport: "NBA",
     updatedAt: new Date().toISOString(),
-    snapshot,
+    matches: snapshot.map((m) => ({
+      dateUtc: m.dateUtc,
+      home: {
+        ...m.home,
+        comparativeRAI: {
+          edge: m.home.team.name,
+          delta: 3,
+          levers: [
+            { lever: "Offensive spacing", value: 2 },
+            { lever: "Shot quality creation", value: 3 },
+          ],
+        },
+        comparativePAI: {
+          conclusion:
+            "Victory achieved despite weaker-than-expected offensive execution.",
+        },
+      },
+      away: {
+        ...m.away,
+        comparativeRAI: {
+          edge: m.away.team.name,
+          delta: 3,
+          levers: [{ lever: "PnR matchup stress", value: 6 }],
+        },
+        comparativePAI: {
+          conclusion:
+            "Performance aligned with pre-game structural expectations.",
+        },
+      },
+    })),
   };
 }
