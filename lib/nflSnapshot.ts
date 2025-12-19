@@ -1,4 +1,7 @@
-import { getNFLGames } from "@/lib/providers/espn";
+import { NFL_TEAMS } from "@/lib/data/nflTeams";
+import { getLastAndNextGame } from "@/lib/providers/espn";
+
+/* ================= TYPES ================= */
 
 export type NFLLever = {
   lever: string;
@@ -18,11 +21,10 @@ export type TeamPAI = {
   levers: {
     lever: string;
     delta: number;
-    interpretation: string;
   }[];
 };
 
-export type NFLMatchSnapshot = {
+export type NFLMatchCard = {
   home: string;
   away: string;
   finalScore: string;
@@ -30,65 +32,68 @@ export type NFLMatchSnapshot = {
   postgamePAI: TeamPAI[];
 };
 
+/* ================= SNAPSHOT ================= */
+
 export async function buildNFLSnapshot(): Promise<{
   sport: "nfl";
   updatedAt: string;
-  matches: NFLMatchSnapshot[];
+  matches: NFLMatchCard[];
 }> {
-  const games = await getNFLGames();
+  const matches: NFLMatchCard[] = [];
+  const seen = new Set<string>();
 
-  const matches: NFLMatchSnapshot[] = [];
+  for (const team of NFL_TEAMS) {
+    const { last } = await getLastAndNextGame("nfl", team.id);
+    if (!last) continue;
 
-  for (const game of games) {
-    if (!game.completed) continue;
+    const home = last.home.name;
+    const away = last.away.name;
 
-    const home = game.homeTeam.name;
-    const away = game.awayTeam.name;
-    const hs = game.homeScore;
-    const as = game.awayScore;
+    const key = [home, away].sort().join("-");
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const hs = last.home.score;
+    const as = last.away.score;
 
     const finalScore =
       typeof hs === "number" && typeof as === "number"
         ? `${hs} – ${as}`
         : "—";
 
-    // --------------------
-    // RAI COMPARATIF (RÉEL)
-    // --------------------
-    const earlyDown = Math.round((Math.random() * 6 + 2) * 100) / 100;
-    const protection = Math.round((Math.random() * 4 + 1) * 100) / 100;
-    const coverage = Math.round((Math.random() * 5 + 1) * 100) / 100;
+    /* -------- RAI COMPARATIF -------- */
 
-    const delta =
-      Math.round((earlyDown + protection - coverage) * 100) / 100;
+    const earlyDown = 2 + Math.random() * 4;
+    const protection = 1 + Math.random() * 3;
+    const coverage = 1 + Math.random() * 4;
 
-    const edge = delta >= 0 ? home : away;
+    const deltaRaw = earlyDown + protection - coverage;
+    const edge = deltaRaw >= 0 ? home : away;
 
     const comparativeRAI: ComparativeRAI = {
       edge,
-      delta: Math.abs(delta),
+      delta: Math.abs(+deltaRaw.toFixed(2)),
       levers: [
         {
           lever: "Early-down efficiency",
           advantage: home,
-          value: earlyDown,
+          value: +earlyDown.toFixed(2),
         },
         {
           lever: "Pass protection integrity",
           advantage: home,
-          value: protection,
+          value: +protection.toFixed(2),
         },
         {
           lever: "Coverage matchup stress",
           advantage: away,
-          value: coverage,
+          value: +coverage.toFixed(2),
         },
       ],
     };
 
-    // --------------------
-    // PAI POSTGAME (CHIFFRÉ)
-    // --------------------
+    /* -------- PAI POSTGAME -------- */
+
     const homePAI: TeamPAI = {
       team: home,
       lastScore: finalScore,
@@ -96,17 +101,14 @@ export async function buildNFLSnapshot(): Promise<{
         {
           lever: "Early-down efficiency",
           delta: +(Math.random() * 3 - 1.5).toFixed(2),
-          interpretation: "vs expectation",
         },
         {
           lever: "Pass protection integrity",
           delta: +(Math.random() * 3 - 1.5).toFixed(2),
-          interpretation: "vs expectation",
         },
         {
           lever: "Coverage matchup stress",
           delta: +(Math.random() * 3 - 1.5).toFixed(2),
-          interpretation: "vs expectation",
         },
       ],
     };
@@ -118,17 +120,14 @@ export async function buildNFLSnapshot(): Promise<{
         {
           lever: "Early-down efficiency",
           delta: +(Math.random() * 3 - 1.5).toFixed(2),
-          interpretation: "vs expectation",
         },
         {
           lever: "Pass protection integrity",
           delta: +(Math.random() * 3 - 1.5).toFixed(2),
-          interpretation: "vs expectation",
         },
         {
           lever: "Coverage matchup stress",
           delta: +(Math.random() * 3 - 1.5).toFixed(2),
-          interpretation: "vs expectation",
         },
       ],
     };
