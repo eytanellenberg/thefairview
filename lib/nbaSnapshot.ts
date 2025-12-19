@@ -5,45 +5,34 @@ export async function buildNBASnapshot() {
   const snapshot: any[] = [];
 
   for (const team of NBA_TEAMS) {
-    const last = await getLastGame(team.id);
+    const last = await getLastGame("nba", team.id);
     if (!last) continue;
 
     const isHome = last.home.id === team.id;
     const opponent = isHome ? last.away : last.home;
 
-    // 🔵 RAI — STRUCTUREL (pregame proxy)
-    const raiDelta = 3;
+    // 🔵 RAI — pregame (structurel, minimal)
+    const delta = 3;
 
     const comparativeRAI = {
-      delta: raiDelta,
-      sign: raiDelta > 0 ? "+" : "−",
+      delta,
+      sign: delta >= 0 ? "+" : "−",
       levers: [
-        { lever: "Offensive spacing", effect: "+", weight: 2 },
-        { lever: "Shot quality creation", effect: "+", weight: 3 },
-        { lever: "Defensive matchup stress", effect: "−", weight: 2 },
+        { lever: "Offensive spacing", effect: "+", value: 2 },
+        { lever: "Shot quality creation", effect: "+", value: 3 },
+        { lever: "Defensive matchup stress", effect: "−", value: 2 },
       ],
-      interpretation:
-        "Structural pregame edge inferred from roster composition and playstyle.",
     };
 
-    // 🔴 PAI — FACTUEL (postgame only)
+    // 🔴 PAI — postgame (factuel, last game only)
     const comparativePAI = {
       levers: [
-        {
-          lever: "Offensive execution",
-          status: "Weakened vs expectation",
-        },
-        {
-          lever: "Shot conversion",
-          status: "Below structural baseline",
-        },
-        {
-          lever: "Defensive resistance",
-          status: "Confirmed as expected",
-        },
+        { lever: "Offensive execution", status: "Weakened vs expectation" },
+        { lever: "Shot conversion", status: "Below baseline" },
+        { lever: "Defensive resistance", status: "Confirmed as expected" },
       ],
       conclusion:
-        "Observed outcome reflects execution variance relative to pregame structural readiness.",
+        "Postgame execution assessed relative to pregame structural readiness.",
     };
 
     snapshot.push({
@@ -51,7 +40,6 @@ export async function buildNBASnapshot() {
         id: team.id,
         name: team.name,
       },
-
       lastGame: {
         dateUtc: last.dateUtc,
         opponent: opponent.name,
@@ -60,7 +48,6 @@ export async function buildNBASnapshot() {
             ? `${last.home.score} – ${last.away.score}`
             : "—",
       },
-
       comparativeRAI,
       comparativePAI,
     });
