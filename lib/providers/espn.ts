@@ -4,17 +4,19 @@ export type ESPNGame = {
   dateUtc: string;
   home: { id: string; name: string; score: number | null };
   away: { id: string; name: string; score: number | null };
-  // utile pour savoir si c’est terminé
   status?: { type?: { state?: string } };
 };
 
 function extractScoreToNumber(score: any): number | null {
   if (score == null) return null;
+
   if (typeof score === "number") return Number.isFinite(score) ? score : null;
+
   if (typeof score === "string") {
     const n = Number(score);
     return Number.isFinite(n) ? n : null;
   }
+
   if (typeof score === "object") {
     if ("value" in score) {
       const n = Number((score as any).value);
@@ -25,6 +27,7 @@ function extractScoreToNumber(score: any): number | null {
       return Number.isFinite(n) ? n : null;
     }
   }
+
   return null;
 }
 
@@ -129,4 +132,17 @@ export async function getLastAndNextGame(
     last: past.length ? parseGame(past[0]) : null,
     next: future.length ? parseGame(future[0]) : null,
   };
+}
+
+/* ----------------------------
+   ✅ Compatibility wrappers
+   (fixes your current imports)
+----------------------------- */
+
+export async function getLastNFLGame(teamId: string) {
+  return getLastGame("nfl", teamId);
+}
+
+export async function getLastSoccerGame(teamId: string) {
+  return getLastGame("soccer", teamId);
 }
