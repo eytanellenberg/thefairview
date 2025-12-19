@@ -1,91 +1,89 @@
-import Link from "next/link";
+import { computeSoccerBigScoreSnapshot } from "@/lib/soccerBigScore";
 
-export default function SoccerHomePage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function SoccerPage() {
+  const data = await computeSoccerBigScoreSnapshot();
+
   return (
-    <main className="p-6 max-w-4xl mx-auto text-gray-900 bg-white">
+    <main className="p-6 max-w-5xl mx-auto bg-white text-gray-900">
       <h1 className="text-2xl font-semibold mb-2">
-        Soccer — European & US Leagues
+        Soccer — Match-based FAIR Analysis
       </h1>
 
-      <p className="text-sm text-gray-700 mb-6">
-        FAIR applies the same causal framework used in NBA and NFL to football.
-        <br />
-        Match-based analysis. Comparative. Non-predictive.
+      <p className="text-sm text-gray-600 mb-6">
+        Updated at {new Date(data.updatedAt).toLocaleString()}
       </p>
 
-      {/* LEAGUES */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">
-          Select a league
-        </h2>
+      {data.matches.map((match, idx) => (
+        <section key={idx} className="mb-8 border-b pb-6">
+          <h2 className="text-xl font-semibold mb-1">
+            {match.home} vs {match.away}
+          </h2>
 
-        <div className="flex flex-col gap-2">
-          {/* EUROPE */}
-          <Link
-            href="/soccer/premier-league"
-            className="border rounded p-3 hover:bg-gray-50"
-          >
-            🇬🇧 <strong>Premier League</strong>
-          </Link>
+          <p className="text-sm mb-3">
+            Final score: {match.score}
+          </p>
 
-          <Link
-            href="/soccer/la-liga"
-            className="border rounded p-3 hover:bg-gray-50"
-          >
-            🇪🇸 <strong>La Liga</strong>
-          </Link>
+          {/* RAI */}
+          <div className="mb-4">
+            <h3 className="font-semibold">
+              Pregame — Comparative Readiness (RAI)
+            </h3>
 
-          <Link
-            href="/soccer/bundesliga"
-            className="border rounded p-3 hover:bg-gray-50"
-          >
-            🇩🇪 <strong>Bundesliga</strong>
-          </Link>
+            <p className="text-sm mb-1">
+              RAI edge:{" "}
+              <strong>
+                {match.rai.edgeTeam} (
+                {match.rai.delta >= 0 ? "+" : ""}
+                {match.rai.delta.toFixed(2)})
+              </strong>
+            </p>
 
-          <Link
-            href="/soccer/serie-a"
-            className="border rounded p-3 hover:bg-gray-50"
-          >
-            🇮🇹 <strong>Serie A</strong>
-          </Link>
+            <ul className="list-disc ml-5 text-sm">
+              {match.rai.levers.map((l, i) => (
+                <li key={i}>
+                  {l.lever}: {l.team} (
+                  {l.value >= 0 ? "+" : ""}
+                  {l.value.toFixed(2)})
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          <Link
-            href="/soccer/ligue-1"
-            className="border rounded p-3 hover:bg-gray-50"
-          >
-            🇫🇷 <strong>Ligue 1</strong>
-          </Link>
+          {/* PAI */}
+          <div>
+            <h3 className="font-semibold">
+              Postgame — Comparative Execution (PAI)
+            </h3>
 
-          {/* USA */}
-          <Link
-            href="/soccer/mls"
-            className="border rounded p-3 hover:bg-gray-50"
-          >
-            🇺🇸 <strong>MLS</strong>
-          </Link>
-        </div>
-      </div>
+            {match.pai.map((team, i) => (
+              <div key={i} className="mb-3">
+                <p className="font-medium">{team.team}</p>
+                <p className="text-sm mb-1">Last: {team.score}</p>
 
-      {/* METHOD */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-2">
-          Method
-        </h2>
-        <ul className="list-disc ml-6 text-sm text-gray-700">
-          <li>
-            <strong>RAI</strong> — structural edge before kickoff
-          </li>
-          <li>
-            <strong>3 levers</strong> — team strength, context, availability
-          </li>
-          <li>
-            <strong>PAI</strong> — causal explanation of the final result
-          </li>
-        </ul>
-        <p className="text-sm text-gray-600 mt-2">
-          Data source: ESPN · FAIR causal framework
-        </p>
-      </div>
+                <ul className="list-disc ml-5 text-sm">
+                  {team.levers.map((l, j) => (
+                    <li key={j}>
+                      {l.lever}:{" "}
+                      {l.delta >= 0
+                        ? "Outperformed vs expectation"
+                        : "Weakened vs expectation"}{" "}
+                      ({l.delta >= 0 ? "+" : ""}
+                      {l.delta.toFixed(2)})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <p className="text-xs text-gray-600 mt-2">
+              Outcome interpreted through execution deltas relative to pregame structural expectations.
+            </p>
+          </div>
+        </section>
+      ))}
 
       <footer className="text-xs text-gray-500 mt-10">
         FAIR — structure over narrative · eytan_ellenberg@yahoo.fr
