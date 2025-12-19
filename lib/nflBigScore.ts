@@ -13,10 +13,6 @@ export type NFLBigScoreSnapshot = {
   teams: NFLLastGameTeam[];
 };
 
-/**
- * Fetches NFL scoreboard from ESPN and returns
- * ONE last game per team (real data).
- */
 export async function computeNFLBigScoreSnapshot(): Promise<NFLBigScoreSnapshot> {
   const url =
     "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
@@ -24,7 +20,6 @@ export async function computeNFLBigScoreSnapshot(): Promise<NFLBigScoreSnapshot>
   const res = await fetch(url, {
     cache: "no-store",
     headers: {
-      // 🚨 REQUIRED for Vercel / ESPN
       "User-Agent":
         "Mozilla/5.0 (compatible; FAIR-Analytics/1.0; +https://thefairview.app)",
       Accept: "application/json",
@@ -43,6 +38,11 @@ export async function computeNFLBigScoreSnapshot(): Promise<NFLBigScoreSnapshot>
   for (const event of events) {
     const competition = event?.competitions?.[0];
     if (!competition) continue;
+
+    // ✅ CRITICAL FILTER
+    if (competition.status?.type?.completed !== true) {
+      continue;
+    }
 
     const competitors = competition.competitors;
     if (!Array.isArray(competitors) || competitors.length !== 2) continue;
@@ -63,7 +63,7 @@ export async function computeNFLBigScoreSnapshot(): Promise<NFLBigScoreSnapshot>
 
     const scoreLine = `${homeScore} – ${awayScore}`;
 
-    // Home team entry
+    // home team
     if (!teamsMap.has(homeTeam)) {
       teamsMap.set(homeTeam, {
         team: homeTeam,
@@ -73,7 +73,7 @@ export async function computeNFLBigScoreSnapshot(): Promise<NFLBigScoreSnapshot>
       });
     }
 
-    // Away team entry
+    // away team
     if (!teamsMap.has(awayTeam)) {
       teamsMap.set(awayTeam, {
         team: awayTeam,
