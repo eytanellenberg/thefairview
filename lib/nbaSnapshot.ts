@@ -2,6 +2,12 @@ import { NBA_TEAMS } from "@/lib/data/nbaTeams";
 import { getLastAndNextGame } from "@/lib/providers/espn";
 
 export async function buildNBASnapshot() {
+  // 🔍 TRACE D’EXÉCUTION — pour vérifier que la fonction tourne bien à chaque requête
+  console.log(
+    "NBA snapshot rebuilt at",
+    new Date().toISOString()
+  );
+
   const snapshot: any[] = [];
 
   for (const team of NBA_TEAMS) {
@@ -89,8 +95,9 @@ export async function buildNBASnapshot() {
             }
           : null,
       });
-    } catch {
+    } catch (e) {
       // skip team on ESPN error
+      console.error("NBA snapshot error for team", team.id, e);
     }
   }
 
