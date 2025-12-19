@@ -2,10 +2,7 @@ import { getLastGame, getRecentGames } from "@/lib/providers/espn";
 
 /* ===================== TYPES ===================== */
 
-type TeamRef = {
-  id: string;
-  name: string;
-};
+type TeamRef = { id: string };
 
 type RAILever = {
   lever: string;
@@ -41,33 +38,36 @@ export type NFLMatchCard = {
 };
 
 /* ===================== CONFIG ===================== */
-
+/**
+ * ✅ Important: only IDs here.
+ * Names come from ESPN game object (home/away) to avoid mismatches.
+ */
 const NFL_TEAMS: TeamRef[] = [
-  { id: "1", name: "Atlanta Falcons" },
-  { id: "2", name: "Buffalo Bills" },
-  { id: "3", name: "Chicago Bears" },
-  { id: "4", name: "Cincinnati Bengals" },
-  { id: "5", name: "Cleveland Browns" },
-  { id: "6", name: "Dallas Cowboys" },
-  { id: "7", name: "Denver Broncos" },
-  { id: "8", name: "Green Bay Packers" },
-  { id: "9", name: "Kansas City Chiefs" },
-  { id: "10", name: "Las Vegas Raiders" },
-  { id: "11", name: "Los Angeles Chargers" },
-  { id: "12", name: "Los Angeles Rams" },
-  { id: "13", name: "Miami Dolphins" },
-  { id: "14", name: "Minnesota Vikings" },
-  { id: "15", name: "New England Patriots" },
-  { id: "16", name: "New Orleans Saints" },
-  { id: "17", name: "New York Giants" },
-  { id: "18", name: "New York Jets" },
-  { id: "19", name: "Philadelphia Eagles" },
-  { id: "20", name: "Pittsburgh Steelers" },
-  { id: "21", name: "San Francisco 49ers" },
-  { id: "22", name: "Seattle Seahawks" },
-  { id: "23", name: "Tampa Bay Buccaneers" },
-  { id: "24", name: "Tennessee Titans" },
-  { id: "25", name: "Washington Commanders" },
+  { id: "1" },
+  { id: "2" },
+  { id: "3" },
+  { id: "4" },
+  { id: "5" },
+  { id: "6" },
+  { id: "7" },
+  { id: "8" },
+  { id: "9" },
+  { id: "10" },
+  { id: "11" },
+  { id: "12" },
+  { id: "13" },
+  { id: "14" },
+  { id: "15" },
+  { id: "16" },
+  { id: "17" },
+  { id: "18" },
+  { id: "19" },
+  { id: "20" },
+  { id: "21" },
+  { id: "22" },
+  { id: "23" },
+  { id: "24" },
+  { id: "25" },
 ];
 
 /* ===================== HELPERS ===================== */
@@ -90,13 +90,17 @@ function statusFromValue(v: number): PAILever["status"] {
 /**
  * REAL comparative RAI (A − B)
  * proxy: recent net points / game (last 3)
+ * ✅ Clamp delta to keep it readable.
  */
 function computeComparativeRAI(
   A: { name: string; net3: number },
   B: { name: string; net3: number }
 ) {
   const diff = A.net3 - B.net3;
-  const delta = Math.round(diff);
+
+  // readable delta
+  const rawDelta = Math.round(diff);
+  const delta = clamp(Math.abs(rawDelta), 0, 12);
 
   const edgeTeam = diff >= 0 ? A.name : B.name;
 
@@ -118,15 +122,14 @@ function computeComparativeRAI(
     },
   ];
 
-  return {
-    edgeTeam,
-    delta: Math.abs(delta),
-    levers,
-  };
+  return { edgeTeam, delta, levers };
 }
 
 /* ===================== PAI ===================== */
-
+/**
+ * PAI numeric deltas from last game only:
+ * baseline points = 24 (NFL-lite)
+ */
 function buildPAI(teamId: string, teamName: string, last: any) {
   const isHome = last.home.id === teamId;
   const forPts = isHome ? last.home.score : last.away.score;
@@ -138,11 +141,7 @@ function buildPAI(teamId: string, teamName: string, last: any) {
       : "—";
 
   if (typeof forPts !== "number" || typeof agPts !== "number") {
-    return {
-      team: teamName,
-      lastScore,
-      levers: [],
-    };
+    return { team: teamName, lastScore, levers: [] as PAILever[] };
   }
 
   const margin = forPts - agPts;
@@ -152,21 +151,9 @@ function buildPAI(teamId: string, teamName: string, last: any) {
   const coverage = clamp((24 - agPts) / 7, -3, 3);
 
   const levers: PAILever[] = [
-    {
-      lever: "Early-down efficiency",
-      value: Number(earlyDown.toFixed(2)),
-      status: statusFromValue(earlyDown),
-    },
-    {
-      lever: "Pass protection integrity",
-      value: Number(protection.toFixed(2)),
-      status: statusFromValue(protection),
-    },
-    {
-      lever: "Coverage matchup stress",
-      value: Number(coverage.toFixed(2)),
-      status: statusFromValue(coverage),
-    },
+    { lever: "Early-down efficiency", value: Number(earlyDown.toFixed(2)), status: statusFromValue(earlyDown) },
+    { lever: "Pass protection integrity", value: Number(protection.toFixed(2)), status: statusFromValue(protection) },
+    { lever: "Coverage matchup stress", value: Number(coverage.toFixed(2)), status: statusFromValue(coverage) },
   ];
 
   return { team: teamName, lastScore, levers };
@@ -180,24 +167,29 @@ export async function buildNFLSnapshot(): Promise<{
   matches: NFLMatchCard[];
 }> {
   const entries: {
-    team: TeamRef;
+    teamId: string;
+    teamName: string; // ✅ from ESPN game
     last: any;
     net3: number;
   }[] = [];
 
-  for (const team of NFL_TEAMS) {
+  for (const t of NFL_TEAMS) {
     try {
-      const last = await getLastGame("nfl", team.id);
+      const last = await getLastGame("nfl", t.id);
       if (!last) continue;
 
-      const recent = await getRecentGames("nfl", team.id, 3);
+      // ✅ derive teamName from the last game object
+      const isHome = last.home.id === t.id;
+      const teamName = isHome ? last.home.name : last.away.name;
+
+      const recent = await getRecentGames("nfl", t.id, 3);
       let net = 0;
       let n = 0;
 
       for (const g of recent) {
-        const isHome = g.home.id === team.id;
-        const fp = isHome ? g.home.score : g.away.score;
-        const ap = isHome ? g.away.score : g.home.score;
+        const home = g.home.id === t.id;
+        const fp = home ? g.home.score : g.away.score;
+        const ap = home ? g.away.score : g.home.score;
         if (typeof fp === "number" && typeof ap === "number") {
           net += fp - ap;
           n++;
@@ -205,21 +197,21 @@ export async function buildNFLSnapshot(): Promise<{
       }
 
       entries.push({
-        team,
+        teamId: t.id,
+        teamName,
         last,
         net3: n ? net / n : 0,
       });
     } catch {}
   }
 
+  // group by match
   const grouped: Record<string, typeof entries> = {};
-
   for (const e of entries) {
-    const oppId =
-      e.last.home.id === e.team.id ? e.last.away.id : e.last.home.id;
+    const oppId = e.last.home.id === e.teamId ? e.last.away.id : e.last.home.id;
     if (!oppId) continue;
 
-    const key = matchKey(e.last.dateUtc, e.team.id, oppId);
+    const key = matchKey(e.last.dateUtc, e.teamId, oppId);
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(e);
   }
@@ -236,34 +228,46 @@ export async function buildNFLSnapshot(): Promise<{
     const as = A.last.away.score;
 
     const finalScore =
-      typeof hs === "number" && typeof as === "number"
-        ? `${hs} – ${as}`
-        : "—";
+      typeof hs === "number" && typeof as === "number" ? `${hs} – ${as}` : "—";
+
+    // ✅ Get correct A/B names for the matchup from ESPN home/away
+    const homeId = A.last.home.id;
+    const awayId = A.last.away.id;
+
+    const homeName = A.last.home.name;
+    const awayName = A.last.away.name;
+
+    // Identify which entry corresponds to home/away in this grouped pair
+    const entryHome = pair.find((x) => x.teamId === homeId) ?? pair[0];
+    const entryAway = pair.find((x) => x.teamId === awayId) ?? pair[1];
 
     const rai = computeComparativeRAI(
-      { name: A.team.name, net3: A.net3 },
-      { name: B.team.name, net3: B.net3 }
+      { name: entryHome.teamName, net3: entryHome.net3 },
+      { name: entryAway.teamName, net3: entryAway.net3 }
     );
 
-    const paiA = buildPAI(A.team.id, A.team.name, A.last);
-    const paiB = buildPAI(B.team.id, B.team.name, B.last);
+    const paiHome = buildPAI(entryHome.teamId, entryHome.teamName, entryHome.last);
+    const paiAway = buildPAI(entryAway.teamId, entryAway.teamName, entryAway.last);
 
     matches.push({
-      match: `${A.last.home.name} vs ${A.last.away.name}`,
+      match: `${homeName} vs ${awayName}`,
       finalScore,
       dateUtc: A.last.dateUtc,
       pregame: rai,
       postgame: {
-        teams: [paiA, paiB],
+        teams: [paiHome, paiAway],
         conclusion:
           "Outcome interpreted through execution deltas relative to pregame structural expectations.",
       },
     });
   }
 
+  // newest first
+  matches.sort((a, b) => new Date(b.dateUtc).getTime() - new Date(a.dateUtc).getTime());
+
   return {
     sport: "NFL",
     updatedAt: new Date().toISOString(),
     matches,
   };
-          }
+    }
