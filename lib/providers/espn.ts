@@ -1,16 +1,27 @@
-export type Sport = "nba" | "nfl" | "mlb" | "soccer";
-
-type TeamRef = {
-  id: string;
-  name: string;
-  score: number | null;
-};
-
 export type ESPNGame = {
   dateUtc: string;
-  home: TeamRef;
-  away: TeamRef;
+  home: {
+    id: string;
+    name: string;
+    score: string | null;
+  };
+  away: {
+    id: string;
+    name: string;
+    score: string | null;
+  };
 };
+
+function extractScore(score: any): string | null {
+  if (score == null) return null;
+  if (typeof score === "string") return score;
+  if (typeof score === "number") return String(score);
+  if (typeof score === "object") {
+    if ("displayValue" in score) return String(score.displayValue);
+    if ("value" in score) return String(score.value);
+  }
+  return null;
+}
 
 function parseGame(event: any): ESPNGame {
   const competition = event.competitions[0];
@@ -24,54 +35,28 @@ function parseGame(event: any): ESPNGame {
     home: {
       id: home.team.id,
       name: home.team.displayName,
-      score: home.score != null ? Number(home.score) : null,
+      score: extractScore(home.score),
     },
     away: {
       id: away.team.id,
       name: away.team.displayName,
-      score: away.score != null ? Number(away.score) : null,
+      score: extractScore(away.score),
     },
   };
 }
 
-/**
- * ESPN path mapping
- * IMPORTANT: sport string ≠ URL path
- */
-function sportPath(sport: Sport) {
-  switch (sport) {
-    case "nba":
-      return "basketball/nba";
-    case "nfl":
-      return "football/nfl";
-    case "mlb":
-      return "baseball/mlb";
-    case "soccer":
-      return "soccer"; // ESPN soccer root (league handled by teamId)
-  }
-}
-
-async function fetchSchedule(sport: Sport, teamId: string) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/${sportPath(
-    sport
-  )}/teams/${teamId}/schedule`;
+export async function getLastGame(teamId: string): Promise<ESPNGame | null> {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/schedule`;
 
   const res = await fetch(url, {
     cache: "no-store",
     next: { revalidate: 0 },
   });
 
-  if (!res.ok) return [];
+  if (!res.ok) return null;
 
   const json = await res.json();
-  return json.events ?? [];
-}
-
-export async function getLastAndNextGame(
-  sport: Sport,
-  teamId: string
-): Promise<{ last: ESPNGame | null; next: ESPNGame | null }> {
-  const events = await fetchSchedule(sport, teamId);
+  const events = json.events ?? [];
   const now = Date.now();
 
   const past = events
@@ -81,15 +66,5 @@ export async function getLastAndNextGame(
         new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-  const future = events
-    .filter((e: any) => new Date(e.date).getTime() >= now)
-    .sort(
-      (a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-  return {
-    last: past.length ? parseGame(past[0]) : null,
-    next: future.length ? parseGame(future[0]) : null,
-  };
+  return past.length ? parseGame(past[0]) : null;
 }
