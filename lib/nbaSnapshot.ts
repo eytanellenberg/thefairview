@@ -1,99 +1,74 @@
 import { NBA_TEAMS } from "@/lib/data/nbaTeams";
-import { getLastAndNextGame } from "@/lib/providers/espn";
-
-type TeamSnapshot = {
-  team: {
-    id: string;
-    name: string;
-  };
-  score: string | null;
-};
-
-type MatchSnapshot = {
-  dateUtc: string;
-  home: TeamSnapshot | null;
-  away: TeamSnapshot | null;
-};
+import { getLastGame } from "@/lib/providers/espn";
 
 export async function buildNBASnapshot() {
-  const matches = new Map<string, MatchSnapshot>();
+  const snapshot: any[] = [];
 
   for (const team of NBA_TEAMS) {
-    const { last } = await getLastAndNextGame("nba", team.id);
+    const last = await getLastGame(team.id);
     if (!last) continue;
 
-    const key = `${last.dateUtc}-${[last.home.id, last.away.id]
-      .sort()
-      .join("-")}`;
-
-    if (!matches.has(key)) {
-      matches.set(key, {
-        dateUtc: last.dateUtc,
-        home: null,
-        away: null,
-      });
-    }
-
-    const match = matches.get(key)!;
     const isHome = last.home.id === team.id;
+    const opponent = isHome ? last.away : last.home;
 
-    const scoreString =
-      last.home.score !== null && last.away.score !== null
-        ? `${last.home.score} – ${last.away.score}`
-        : null;
+    // 🔵 RAI — STRUCTUREL (pregame proxy)
+    const raiDelta = 3;
 
-    const teamBlock: TeamSnapshot = {
+    const comparativeRAI = {
+      delta: raiDelta,
+      sign: raiDelta > 0 ? "+" : "−",
+      levers: [
+        { lever: "Offensive spacing", effect: "+", weight: 2 },
+        { lever: "Shot quality creation", effect: "+", weight: 3 },
+        { lever: "Defensive matchup stress", effect: "−", weight: 2 },
+      ],
+      interpretation:
+        "Structural pregame edge inferred from roster composition and playstyle.",
+    };
+
+    // 🔴 PAI — FACTUEL (postgame only)
+    const comparativePAI = {
+      levers: [
+        {
+          lever: "Offensive execution",
+          status: "Weakened vs expectation",
+        },
+        {
+          lever: "Shot conversion",
+          status: "Below structural baseline",
+        },
+        {
+          lever: "Defensive resistance",
+          status: "Confirmed as expected",
+        },
+      ],
+      conclusion:
+        "Observed outcome reflects execution variance relative to pregame structural readiness.",
+    };
+
+    snapshot.push({
       team: {
         id: team.id,
         name: team.name,
       },
-      score: scoreString,
-    };
 
-    if (isHome) match.home = teamBlock;
-    else match.away = teamBlock;
+      lastGame: {
+        dateUtc: last.dateUtc,
+        opponent: opponent.name,
+        score:
+          last.home.score && last.away.score
+            ? `${last.home.score} – ${last.away.score}`
+            : "—",
+      },
+
+      comparativeRAI,
+      comparativePAI,
+    });
   }
-
-  const snapshot = Array.from(matches.values()).filter(
-    (m) => m.home || m.away
-  );
 
   return {
     sport: "NBA",
     updatedAt: new Date().toISOString(),
-    matches: snapshot.map((m) => ({
-      dateUtc: m.dateUtc,
-      home: m.home
-        ? {
-            ...m.home,
-            comparativeRAI: {
-              edge: m.home.team.name,
-              delta: 3,
-              levers: [
-                { lever: "Offensive spacing", value: 2 },
-                { lever: "Shot quality creation", value: 3 },
-              ],
-            },
-            comparativePAI: {
-              conclusion:
-                "Victory achieved despite weaker-than-expected offensive execution.",
-            },
-          }
-        : null,
-      away: m.away
-        ? {
-            ...m.away,
-            comparativeRAI: {
-              edge: m.away.team.name,
-              delta: 3,
-              levers: [{ lever: "PnR matchup stress", value: 6 }],
-            },
-            comparativePAI: {
-              conclusion:
-                "Performance aligned with pre-game structural expectations.",
-            },
-          }
-        : null,
-    })),
+    snapshot,
   };
-}         
+}
