@@ -32,28 +32,52 @@ function parseGame(event: any): ESPNGame {
   };
 }
 
-export async function getLastGame(
-  league: "nba",
-  teamId: string
-): Promise<ESPNGame | null> {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/${league}/teams/${teamId}/schedule`;
+async function fetchSchedule(league: string, teamId: string) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/${league}/teams/${teamId}/schedule`;
 
   const res = await fetch(url, {
     cache: "no-store",
     next: { revalidate: 0 },
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) return [];
 
   const json = await res.json();
-  const events = json.events ?? [];
+  return json.events ?? [];
+}
+
+export async function getLastAndNextGame(
+  league: string,
+  teamId: string
+): Promise<{ last: ESPNGame | null; next: ESPNGame | null }> {
+  const events = await fetchSchedule(league, teamId);
+  const now = Date.now();
 
   const past = events
-    .filter((e: any) => new Date(e.date).getTime() < Date.now())
+    .filter((e: any) => new Date(e.date).getTime() < now)
     .sort(
       (a: any, b: any) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-  return past.length ? parseGame(past[0]) : null;
+  const future = events
+    .filter((e: any) => new Date(e.date).getTime() >= now)
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+  return {
+    last: past.length ? parseGame(past[0]) : null,
+    next: future.length ? parseGame(future[0]) : null,
+  };
+}
+
+/* ✅ NOUVELLE API, optionnelle */
+export async function getLastGame(
+  league: string,
+  teamId: string
+): Promise<ESPNGame | null> {
+  const { last } = await getLastAndNextGame(league, teamId);
+  return last;
 }
