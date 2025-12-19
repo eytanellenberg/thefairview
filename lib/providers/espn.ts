@@ -1,7 +1,7 @@
 type TeamRef = {
   id: string;
   name: string;
-  score?: string;
+  score: number | null;
 };
 
 export type ESPNGame = {
@@ -22,18 +22,18 @@ function parseGame(event: any): ESPNGame {
     home: {
       id: home.team.id,
       name: home.team.displayName,
-      score: home.score,
+      score: home.score ? Number(home.score) : null,
     },
     away: {
       id: away.team.id,
       name: away.team.displayName,
-      score: away.score,
+      score: away.score ? Number(away.score) : null,
     },
   };
 }
 
-async function fetchSchedule(league: string, teamId: string) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/${league}/teams/${teamId}/schedule`;
+async function fetchSchedule(teamId: string) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/schedule`;
 
   const res = await fetch(url, {
     cache: "no-store",
@@ -50,7 +50,7 @@ export async function getLastAndNextGame(
   league: "nba",
   teamId: string
 ): Promise<{ last: ESPNGame | null; next: ESPNGame | null }> {
-  const events = await fetchSchedule(league, teamId);
+  const events = await fetchSchedule(teamId);
   const now = Date.now();
 
   const past = events
@@ -71,4 +71,4 @@ export async function getLastAndNextGame(
     last: past.length ? parseGame(past[0]) : null,
     next: future.length ? parseGame(future[0]) : null,
   };
-    }
+}
