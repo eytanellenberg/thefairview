@@ -1,104 +1,95 @@
 import { SOCCER_TEAMS } from "@/lib/data/soccerTeams";
-import { getLastAndNextGame } from "@/lib/providers/espn";
+import { getLastSoccerGame } from "@/lib/providers/espn";
+
+function matchKey(dateUtc: string, a: string, b: string) {
+  return `${dateUtc}-${[a, b].sort().join("-")}`;
+}
 
 export async function buildSoccerSnapshot() {
   const snapshot: any[] = [];
+  const matches: Record<string, any[]> = {};
 
   for (const team of SOCCER_TEAMS) {
-    try {
-      const { last, next } = await getLastAndNextGame(
-        "soccer",
-        team.id
-      );
+    const last = await getLastSoccerGame(team.id);
+    if (!last) continue;
 
-      const opponentName =
-        last
-          ? last.home.id === team.id
-            ? last.away.name
-            : last.home.name
-          : next
-          ? next.home.id === team.id
-            ? next.away.name
-            : next.home.name
-          : "Unknown";
+    const opponentId =
+      last.home.id === team.id ? last.away.id : last.home.id;
 
-      snapshot.push({
-        team: {
-          id: team.id,
-          name: team.name,
-          league: team.league,
-        },
+    const key = matchKey(last.dateUtc, team.id, opponentId);
 
-        lastGame: last
-          ? {
-              dateUtc: last.dateUtc,
-              score:
-                last.home.id === team.id
-                  ? `${last.home.score} – ${last.away.score}`
-                  : `${last.away.score} – ${last.home.score}`,
-              opponent: opponentName,
-              opponentId:
-                last.home.id === team.id
-                  ? last.away.id
-                  : last.home.id,
-            }
-          : null,
+    const entry = {
+      team: {
+        id: team.id,
+        name: team.name,
+      },
 
-        comparativeRAI: next
-          ? {
-              delta: 2,
-              edgeTeam: team.name,
-              levers: [
-                {
-                  lever: "Chance creation",
-                  advantage: team.name,
-                  value: 2,
-                },
-                {
-                  lever: "Defensive compactness",
-                  advantage: opponentName,
-                  value: 3,
-                },
-                {
-                  lever: "Game control",
-                  advantage: team.name,
-                  value: 1,
-                },
-              ],
-              interpretation:
-                "Small structural edge expected based on possession and chance profile.",
-            }
-          : null,
+      lastGame: {
+        dateUtc: last.dateUtc,
+        score:
+          last.home.id === team.id
+            ? `${last.home.score} – ${last.away.score}`
+            : `${last.away.score} – ${last.home.score}`,
+        opponentId,
+      },
 
-        comparativePAI: last
-          ? {
-              levers: [
-                {
-                  lever: "Chance conversion",
-                  status: "Below expectation",
-                },
-                {
-                  lever: "Defensive transitions",
-                  status: "Confirmed as expected",
-                },
-                {
-                  lever: "Game control",
-                  status: "Weakened vs expectation",
-                },
-              ],
-              conclusion:
-                "Result driven by execution gaps rather than structural mismatch.",
-            }
-          : null,
-      });
-    } catch {
-      // skip team on ESPN error
+      // 🟦 PREGAME — Comparative RAI (Soccer logic)
+      comparativeRAI: {
+        delta: 3,
+        edgeTeam: team.name,
+        levers: [
+          {
+            lever: "Chance creation",
+            advantage: team.name,
+            value: 2,
+          },
+          {
+            lever: "Defensive organization",
+            advantage: "Opponent",
+            value: 2,
+          },
+          {
+            lever: "Game control",
+            advantage: team.name,
+            value: 3,
+          },
+        ],
+      },
+
+      // 🟥 POSTGAME — Comparative PAI (last match only)
+      comparativePAI: {
+        levers: [
+          {
+            lever: "Chance creation",
+            status: "Confirmed as expected",
+          },
+          {
+            lever: "Defensive organization",
+            status: "Weakened vs expectation",
+          },
+          {
+            lever: "Game control",
+            status: "Confirmed as expected",
+          },
+        ],
+        conclusion:
+          "Outcome driven by execution gaps rather than pure structural mismatch.",
+      },
+    };
+
+    if (!matches[key]) matches[key] = [];
+    matches[key].push(entry);
+  }
+
+  for (const group of Object.values(matches)) {
+    if (group.length === 2) {
+      snapshot.push(group);
     }
   }
 
   return {
-    sport: "Soccer",
+    sport: "SOCCER",
     updatedAt: new Date().toISOString(),
-    snapshot,
+    matches: snapshot,
   };
 }
