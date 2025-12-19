@@ -1,6 +1,6 @@
 // lib/nflBigScore.ts
 
-export type NFLBigScoreLever = {
+export type Lever = {
   lever: string;
   value: number;
 };
@@ -11,18 +11,18 @@ export type NFLBigScoreMatch = {
   raiEdge: {
     team: string;
     value: number;
-    levers: NFLBigScoreLever[];
+    levers: Lever[];
   };
   pai: {
     teamA: {
       team: string;
       score: string;
-      levers: NFLBigScoreLever[];
+      levers: Lever[];
     };
     teamB: {
       team: string;
       score: string;
-      levers: NFLBigScoreLever[];
+      levers: Lever[];
     };
   };
 };
@@ -33,9 +33,6 @@ export type NFLBigScoreSnapshot = {
   matches: NFLBigScoreMatch[];
 };
 
-/**
- * MAIN EXPORT — this is what the page imports
- */
 export function computeNFLBigScoreSnapshot(): NFLBigScoreSnapshot {
   return {
     sport: "nfl",
