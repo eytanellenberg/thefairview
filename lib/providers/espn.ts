@@ -1,120 +1,59 @@
-export type GameSummary = {
-  gameId: string;
-  dateUtc: string;
-  status: "final" | "scheduled" | "in_progress";
-  home: { id: string; name: string; score?: number };
-  away: { id: string; name: string; score?: number };
-  venue?: string;
+type TeamRef = {
+  id: string;
+  name: string;
+  score?: string;
 };
 
-const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports";
+export type ESPNGame = {
+  dateUtc: string;
+  home: TeamRef;
+  away: TeamRef;
+};
 
-/**
- * ESPN sport path mapping
- * IMPORTANT:
- * - Soccer MUST be league-specific (eng.1, esp.1, etc.)
- * - Defaulting to Premier League (eng.1) for now
- */
-function sportPath(
-  sport: "nba" | "nfl" | "mlb" | "soccer"
-) {
-  if (sport === "nba") return "basketball/nba";
-  if (sport === "nfl") return "football/nfl";
-  if (sport === "mlb") return "baseball/mlb";
-  if (sport === "soccer") return "soccer/eng.1"; // Premier League
-  return "";
-}
+function parseGame(event: any): ESPNGame {
+  const competition = event.competitions[0];
+  const competitors = competition.competitors;
 
-async function fetchJSON(url: string) {
-  const res = await fetch(url, { next: { revalidate: 3600 } });
-  if (!res.ok) throw new Error(`ESPN error ${res.status}`);
-  return res.json();
-}
-
-function normalize(event: any): GameSummary | null {
-  const c = event?.competitions?.[0];
-  if (!c) return null;
-
-  const home = c.competitors.find((x: any) => x.homeAway === "home");
-  const away = c.competitors.find((x: any) => x.homeAway === "away");
-  if (!home || !away) return null;
-
-  const t = event.status?.type?.name?.toLowerCase?.() ?? "";
-  const status =
-    t.includes("final")
-      ? "final"
-      : t.includes("in")
-      ? "in_progress"
-      : "scheduled";
+  const home = competitors.find((c: any) => c.homeAway === "home");
+  const away = competitors.find((c: any) => c.homeAway === "away");
 
   return {
-    gameId: String(event.id),
-    dateUtc: String(event.date),
-    status,
+    dateUtc: event.date,
     home: {
-      id: String(home.team.id),
-      name: String(home.team.displayName),
-      score: home.score != null ? Number(home.score) : undefined
+      id: home.team.id,
+      name: home.team.displayName,
+      score: home.score,
     },
     away: {
-      id: String(away.team.id),
-      name: String(away.team.displayName),
-      score: away.score != null ? Number(away.score) : undefined
+      id: away.team.id,
+      name: away.team.displayName,
+      score: away.score,
     },
-    venue: c.venue?.fullName
   };
 }
 
-export async function getLastAndNextGame(
-  sport: "nba" | "nfl" | "mlb" | "soccer",
+export async function getLastGame(
+  league: "nba",
   teamId: string
-) {
-  let next: GameSummary | null = null;
-  let last: GameSummary | null = null;
+): Promise<ESPNGame | null> {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/${league}/teams/${teamId}/schedule`;
 
-  // NEXT GAME
-  try {
-    const scheduleUrl = `${ESPN_BASE}/${sportPath(
-      sport
-    )}/teams/${teamId}/schedule`;
+  const res = await fetch(url, {
+    cache: "no-store",
+    next: { revalidate: 0 },
+  });
 
-    const data = await fetchJSON(scheduleUrl);
-    const games = (data.events ?? [])
-      .map(normalize)
-      .filter(Boolean) as GameSummary[];
+  if (!res.ok) return null;
 
-    next =
-      games
-        .filter(g => g.status === "scheduled")
-        .sort((a, b) => (a.dateUtc > b.dateUtc ? 1 : -1))[0] ?? null;
-  } catch {}
+  const json = await res.json();
+  const events = json.events ?? [];
 
-  // LAST GAME (look back 14 days)
-  const today = new Date();
-  for (let i = 0; i < 14 && !last; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10).replace(/-/g, "");
-    const url = `${ESPN_BASE}/${sportPath(
-      sport
-    )}/scoreboard?dates=${dateStr}`;
+  const past = events
+    .filter((e: any) => new Date(e.date).getTime() < Date.now())
+    .sort(
+      (a: any, b: any) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
-    try {
-      const data = await fetchJSON(url);
-      const games = (data.events ?? [])
-        .map(normalize)
-        .filter(Boolean) as GameSummary[];
-
-      last =
-        games
-          .filter(
-            g =>
-              g.status === "final" &&
-              (g.home.id === teamId || g.away.id === teamId)
-          )
-          .sort((a, b) => (a.dateUtc < b.dateUtc ? 1 : -1))[0] ?? null;
-    } catch {}
-  }
-
-  return { last, next };
+  return past.length ? parseGame(past[0]) : null;
 }
