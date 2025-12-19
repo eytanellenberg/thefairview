@@ -1,6 +1,3 @@
-export async function buildNBASnapshot() {
-  throw new Error("SNAPSHOT EXECUTED");
-}
 import { NBA_TEAMS } from "@/lib/data/nbaTeams";
 import { getLastAndNextGame } from "@/lib/providers/espn";
 
