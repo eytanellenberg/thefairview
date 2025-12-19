@@ -18,7 +18,7 @@ export default async function NBAPage() {
 
       {data.matches.length === 0 && (
         <p className="text-sm text-gray-500 italic">
-          No completed matches available yet.
+          No matches available.
         </p>
       )}
 
