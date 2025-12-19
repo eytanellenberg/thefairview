@@ -33,7 +33,7 @@ function parseGame(event: any): ESPNGame {
 }
 
 async function fetchSchedule(league: string, teamId: string) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/${league}/teams/${teamId}/schedule`;
+  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/${league}/teams/${teamId}/schedule`;
 
   const res = await fetch(url, {
     cache: "no-store",
@@ -47,7 +47,7 @@ async function fetchSchedule(league: string, teamId: string) {
 }
 
 export async function getLastAndNextGame(
-  league: string,
+  league: "nba",
   teamId: string
 ): Promise<{ last: ESPNGame | null; next: ESPNGame | null }> {
   const events = await fetchSchedule(league, teamId);
@@ -71,13 +71,4 @@ export async function getLastAndNextGame(
     last: past.length ? parseGame(past[0]) : null,
     next: future.length ? parseGame(future[0]) : null,
   };
-}
-
-/* ✅ NOUVELLE API, optionnelle */
-export async function getLastGame(
-  league: string,
-  teamId: string
-): Promise<ESPNGame | null> {
-  const { last } = await getLastAndNextGame(league, teamId);
-  return last;
-}
+    }
