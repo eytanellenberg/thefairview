@@ -16,12 +16,6 @@ export default async function NBAPage() {
         Updated at {data.updatedAt}
       </p>
 
-      {data.matches.length === 0 && (
-        <p className="text-sm text-gray-500 italic">
-          No matches available.
-        </p>
-      )}
-
       {data.matches.map((m: any, i: number) => (
         <div
           key={i}
