@@ -1,4 +1,4 @@
-type Sport = "nba" | "nfl" | "mlb";
+export type Sport = "nba" | "nfl" | "mlb" | "soccer";
 
 type TeamRef = {
   id: string;
@@ -24,16 +24,20 @@ function parseGame(event: any): ESPNGame {
     home: {
       id: home.team.id,
       name: home.team.displayName,
-      score: home.score ? Number(home.score) : null,
+      score: home.score != null ? Number(home.score) : null,
     },
     away: {
       id: away.team.id,
       name: away.team.displayName,
-      score: away.score ? Number(away.score) : null,
+      score: away.score != null ? Number(away.score) : null,
     },
   };
 }
 
+/**
+ * ESPN path mapping
+ * IMPORTANT: sport string ≠ URL path
+ */
 function sportPath(sport: Sport) {
   switch (sport) {
     case "nba":
@@ -42,6 +46,8 @@ function sportPath(sport: Sport) {
       return "football/nfl";
     case "mlb":
       return "baseball/mlb";
+    case "soccer":
+      return "soccer"; // ESPN soccer root (league handled by teamId)
   }
 }
 
