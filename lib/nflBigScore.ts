@@ -1,153 +1,94 @@
 // lib/nflBigScore.ts
-// NFL — LAST GAME PER TEAM (one card per team)
 
-export type Lever = { lever: string; value: number };
-
-export type NFLTeamLastGame = {
+export type NFLLastGameTeam = {
   team: string;
   opponent: string;
-  matchup: string;
-  finalScore: string;
-
-  rai: {
-    value: number;
-    levers: Lever[];
-  };
-
-  pai: {
-    levers: Lever[];
-  };
+  score: string;
+  isHome: boolean;
 };
 
 export type NFLBigScoreSnapshot = {
   sport: "nfl";
   updatedAt: string;
-  teams: NFLTeamLastGame[];
+  teams: NFLLastGameTeam[];
 };
 
-type ESPNEvent = {
-  competitions?: {
-    competitors?: {
-      team?: { displayName?: string };
-      score?: string;
-      homeAway?: "home" | "away";
-    }[];
-    status?: { type?: { completed?: boolean } };
-  }[];
-};
-
-function yyyymmdd(d: Date) {
-  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(
-    2,
-    "0"
-  )}${String(d.getUTCDate()).padStart(2, "0")}`;
-}
-
-function num(x: any): number | null {
-  const n = Number(x);
-  return Number.isFinite(n) ? n : null;
-}
-
-function blowoutFactor(margin: number) {
-  if (margin < 7) return 1;
-  if (margin < 14) return 1.5;
-  if (margin < 21) return 2;
-  return 3;
-}
-
-function computePAI(margin: number, won: boolean): Lever[] {
-  const f = blowoutFactor(margin);
-  const s = won ? 1 : -1;
-
-  return [
-    { lever: "Early-down efficiency", value: +(s * 0.4 * f).toFixed(2) },
-    { lever: "Pass protection integrity", value: +(s * 0.3 * f).toFixed(2) },
-    { lever: "Coverage matchup stress", value: +(s * 0.35 * f).toFixed(2) },
-  ];
-}
-
-function computeRAI(): { value: number; levers: Lever[] } {
-  // FREE version: neutral baseline (real data comes in premium)
-  return {
-    value: 0,
-    levers: [
-      { lever: "Structural baseline", value: 0 },
-      { lever: "Context balance", value: 0 },
-    ],
-  };
-}
-
-async function fetchScoreboard(date: string): Promise<ESPNEvent[]> {
-  const url = `https://site.web.api.espn.com/apis/v2/sports/football/nfl/scoreboard?dates=${date}`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return json.events ?? [];
-}
-
+/**
+ * Fetches NFL scoreboard from ESPN and returns
+ * ONE last game per team (real data).
+ */
 export async function computeNFLBigScoreSnapshot(): Promise<NFLBigScoreSnapshot> {
-  const collected = new Map<string, NFLTeamLastGame>();
+  const url =
+    "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
-  const today = new Date();
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      // 🚨 REQUIRED for Vercel / ESPN
+      "User-Agent":
+        "Mozilla/5.0 (compatible; FAIR-Analytics/1.0; +https://thefairview.app)",
+      Accept: "application/json",
+    },
+  });
 
-  for (let i = 0; i < 14 && collected.size < 32; i++) {
-    const d = new Date(today);
-    d.setUTCDate(d.getUTCDate() - i);
-    const date = yyyymmdd(d);
+  if (!res.ok) {
+    throw new Error("Failed to fetch NFL scoreboard");
+  }
 
-    const events = await fetchScoreboard(date);
+  const data = await res.json();
+  const events = Array.isArray(data?.events) ? data.events : [];
 
-    for (const ev of events) {
-      const comp = ev.competitions?.[0];
-      if (!comp?.status?.type?.completed) continue;
+  const teamsMap = new Map<string, NFLLastGameTeam>();
 
-      const c = comp.competitors ?? [];
-      if (c.length !== 2) continue;
+  for (const event of events) {
+    const competition = event?.competitions?.[0];
+    if (!competition) continue;
 
-      const A = c[0];
-      const B = c[1];
+    const competitors = competition.competitors;
+    if (!Array.isArray(competitors) || competitors.length !== 2) continue;
 
-      const teamA = A.team?.displayName;
-      const teamB = B.team?.displayName;
-      const sA = num(A.score);
-      const sB = num(B.score);
+    const home = competitors.find((c: any) => c.homeAway === "home");
+    const away = competitors.find((c: any) => c.homeAway === "away");
 
-      if (!teamA || !teamB || sA === null || sB === null) continue;
+    if (!home || !away) continue;
 
-      const margin = Math.abs(sA - sB);
+    const homeTeam = home.team?.displayName;
+    const awayTeam = away.team?.displayName;
 
-      const Awon = sA > sB;
-      const Bwon = sB > sA;
+    const homeScore = Number(home.score);
+    const awayScore = Number(away.score);
 
-      if (!collected.has(teamA)) {
-        collected.set(teamA, {
-          team: teamA,
-          opponent: teamB,
-          matchup: `${teamA} vs ${teamB}`,
-          finalScore: `${sA} – ${sB}`,
-          rai: computeRAI(),
-          pai: { levers: computePAI(margin, Awon) },
-        });
-      }
+    if (!homeTeam || !awayTeam) continue;
+    if (Number.isNaN(homeScore) || Number.isNaN(awayScore)) continue;
 
-      if (!collected.has(teamB)) {
-        collected.set(teamB, {
-          team: teamB,
-          opponent: teamA,
-          matchup: `${teamB} vs ${teamA}`,
-          finalScore: `${sB} – ${sA}`,
-          rai: computeRAI(),
-          pai: { levers: computePAI(margin, Bwon) },
-        });
-      }
+    const scoreLine = `${homeScore} – ${awayScore}`;
 
-      if (collected.size >= 32) break;
+    // Home team entry
+    if (!teamsMap.has(homeTeam)) {
+      teamsMap.set(homeTeam, {
+        team: homeTeam,
+        opponent: awayTeam,
+        score: scoreLine,
+        isHome: true,
+      });
+    }
+
+    // Away team entry
+    if (!teamsMap.has(awayTeam)) {
+      teamsMap.set(awayTeam, {
+        team: awayTeam,
+        opponent: homeTeam,
+        score: scoreLine,
+        isHome: false,
+      });
     }
   }
 
   return {
     sport: "nfl",
     updatedAt: new Date().toISOString(),
-    teams: Array.from(collected.values()),
+    teams: Array.from(teamsMap.values()).sort((a, b) =>
+      a.team.localeCompare(b.team)
+    ),
   };
 }
