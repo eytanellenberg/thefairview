@@ -1,39 +1,19 @@
-import { buildNFLSnapshot } from "@/lib/nflSnapshot";
+import { buildNFLSnapshot, NFLMatchCard } from "@/lib/nflSnapshot";
 
-type RAILever = {
-  lever: string;
-  advantage: string;
-  value: number;
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type PAILever = {
   lever: string;
+  value: number;
   status: string;
-};
-
-type TeamBlock = {
-  team: string;
-  comparativePAI: {
-    levers: PAILever[];
-  };
-};
-
-type MatchSnapshot = {
-  match: string;
-  finalScore: string;
-  comparativeRAI: {
-    edge: string;
-    delta: number;
-    levers: RAILever[];
-  };
-  teams: TeamBlock[];
 };
 
 export default async function NFLPage() {
   const data: {
     sport: string;
     updatedAt: string;
-    matches: MatchSnapshot[];
+    matches: NFLMatchCard[];
   } = await buildNFLSnapshot();
 
   return (
@@ -43,63 +23,74 @@ export default async function NFLPage() {
       </h1>
 
       <p className="text-sm text-gray-600 mb-6">
-        Updated at {new Date(data.updatedAt).toISOString()}
+        Updated at {data.updatedAt}
       </p>
 
-      {data.matches.map((match, idx) => (
-        <section
-          key={idx}
-          className="mb-10 pb-6 border-b border-gray-200"
+      <h2 className="text-lg font-semibold mb-4">Played matches</h2>
+
+      {data.matches.map((m, index) => (
+        <div
+          key={index}
+          className="border rounded-lg p-4 mb-6 bg-white shadow-sm"
         >
-          <h2 className="text-lg font-semibold mb-1">{match.match}</h2>
+          <h3 className="font-medium mb-1">{m.match}</h3>
 
-          <p className="text-sm mb-3">
-            Final score: {match.finalScore}
-          </p>
+          <p className="text-sm mb-3">Final score: {m.finalScore}</p>
 
-          {/* RAI */}
-          <h3 className="font-medium mt-3">
-            Pregame — Comparative Readiness (RAI)
-          </h3>
+          {/* 🔵 RAI */}
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm mb-1">
+              Pregame — Comparative Readiness (RAI)
+            </h4>
 
-          <p className="text-sm mb-2">
-            RAI edge: <strong>{match.comparativeRAI.edge}</strong>{" "}
-            ({match.comparativeRAI.delta >= 0 ? "+" : ""}
-            {match.comparativeRAI.delta})
-          </p>
+            <p className="text-sm mb-1">
+              RAI edge:{" "}
+              <strong>
+                {m.pregame.edgeTeam} (+{m.pregame.delta})
+              </strong>
+            </p>
 
-          <ul className="list-disc ml-5 text-sm mb-4">
-            {match.comparativeRAI.levers.map(
-              (l: RAILever, i: number) => (
+            <ul className="list-disc ml-5 text-sm">
+              {m.pregame.levers.map((l, i) => (
                 <li key={i}>
                   {l.lever}: {l.advantage}{" "}
                   ({l.value >= 0 ? "+" : ""}
                   {l.value})
                 </li>
-              )
-            )}
-          </ul>
+              ))}
+            </ul>
+          </div>
 
-          {/* PAI */}
-          <h3 className="font-medium">
-            Postgame — Comparative Execution (PAI)
-          </h3>
+          {/* 🔴 PAI */}
+          <div className="mb-2">
+            <h4 className="font-semibold text-sm mb-1">
+              Postgame — Comparative Execution (PAI)
+            </h4>
 
-          {match.teams.map((team, j) => (
-            <div key={j} className="mt-3">
-              <p className="font-semibold text-sm">{team.team}</p>
-              <ul className="list-disc ml-5 text-sm">
-                {team.comparativePAI.levers.map(
-                  (l: PAILever, k: number) => (
+            {m.postgame.teams.map((t, j) => (
+              <div key={j} className="mb-3">
+                <strong>{t.team}</strong>
+                <p className="text-xs text-gray-500">Last: {t.lastScore}</p>
+
+                <ul className="list-disc ml-5 text-sm">
+                  {(t.levers as PAILever[]).map((lv, k) => (
                     <li key={k}>
-                      {l.lever}: {l.status}
+                      {lv.lever}: {lv.status}{" "}
+                      <strong>
+                        ({lv.value >= 0 ? "+" : ""}
+                        {lv.value})
+                      </strong>
                     </li>
-                  )
-                )}
-              </ul>
-            </div>
-          ))}
-        </section>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <p className="text-sm italic text-gray-600">
+              {m.postgame.conclusion}
+            </p>
+          </div>
+        </div>
       ))}
 
       <footer className="text-xs text-gray-500 mt-10">
