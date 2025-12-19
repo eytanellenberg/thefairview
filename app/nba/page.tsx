@@ -16,14 +16,8 @@ export default async function NBAPage() {
         Updated at {data.updatedAt}
       </p>
 
-      {data.snapshot.length === 0 && (
-        <p className="text-sm text-gray-600">
-          No upcoming matchups detected yet.
-        </p>
-      )}
-
       {data.snapshot.map((m: any, i: number) => (
-        <div key={i} className="border rounded-lg p-4 mb-5 shadow-sm">
+        <div key={i} className="border rounded-lg p-4 mb-6 shadow-sm">
           <h2 className="font-medium text-lg mb-1">{m.matchup}</h2>
           <p className="text-xs text-gray-500 mb-3">
             Next game (UTC): {m.nextGameUtc}
@@ -40,7 +34,7 @@ export default async function NBAPage() {
             → advantage <strong>{m.pregameRAI.favoredTeam}</strong>
           </p>
 
-          <ul className="list-disc ml-5 text-sm mb-3">
+          <ul className="list-disc ml-5 text-sm mb-4">
             {m.pregameRAI.levers.map((l: any, j: number) => (
               <li key={j}>
                 {l.lever}: {l.value >= 0 ? "+" : ""}
@@ -49,19 +43,15 @@ export default async function NBAPage() {
             ))}
           </ul>
 
-          <details className="text-xs text-gray-600 mb-4">
-            <summary className="cursor-pointer">RAI inputs (real)</summary>
-            <pre className="whitespace-pre-wrap">
-{JSON.stringify(m.pregameRAI.notes, null, 2)}
-            </pre>
-          </details>
-
           <h3 className="font-semibold text-sm mb-1">
-            Postgame — Execution (PAI, last game)
+            Postgame — Execution (PAI)
           </h3>
 
-          <div className="text-sm mb-2">
-            <strong>{m.postgamePAI.A.team}</strong> — last: {m.postgamePAI.A.lastScore}
+          <p className="text-xs text-gray-500 mb-2">{m.postgamePAI.note}</p>
+
+          <div className="text-sm mb-3">
+            <strong>{m.postgamePAI.A.team}</strong> — last:{" "}
+            {m.postgamePAI.A.lastScore}
             <ul className="list-disc ml-5">
               {m.postgamePAI.A.levers.map((x: any, k: number) => (
                 <li key={k}>
@@ -69,11 +59,14 @@ export default async function NBAPage() {
                 </li>
               ))}
             </ul>
-            <p className="italic text-gray-600">{m.postgamePAI.A.conclusion}</p>
+            <p className="italic text-gray-600">
+              {m.postgamePAI.A.conclusion}
+            </p>
           </div>
 
           <div className="text-sm">
-            <strong>{m.postgamePAI.B.team}</strong> — last: {m.postgamePAI.B.lastScore}
+            <strong>{m.postgamePAI.B.team}</strong> — last:{" "}
+            {m.postgamePAI.B.lastScore}
             <ul className="list-disc ml-5">
               {m.postgamePAI.B.levers.map((x: any, k: number) => (
                 <li key={k}>
@@ -81,7 +74,9 @@ export default async function NBAPage() {
                 </li>
               ))}
             </ul>
-            <p className="italic text-gray-600">{m.postgamePAI.B.conclusion}</p>
+            <p className="italic text-gray-600">
+              {m.postgamePAI.B.conclusion}
+            </p>
           </div>
         </div>
       ))}
