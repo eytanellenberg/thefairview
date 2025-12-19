@@ -19,7 +19,7 @@ export async function buildNBASnapshot() {
   const matches = new Map<string, MatchSnapshot>();
 
   for (const team of NBA_TEAMS) {
-    const { last } = await getLastAndNextGame("basketball/nba", team.id);
+    const { last } = await getLastAndNextGame("nba", team.id);
     if (!last) continue;
 
     const key = `${last.dateUtc}-${[last.home.id, last.away.id]
