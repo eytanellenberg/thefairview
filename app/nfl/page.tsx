@@ -20,35 +20,11 @@ export default async function NFLPage() {
       </p>
 
       {data.teams.map((t, i) => (
-        <section key={i} className="mb-8 border-b pb-5">
-          <h2 className="text-lg font-semibold">{t.team}</h2>
-          <p className="text-sm mb-2">
-            Last game vs <strong>{t.opponent}</strong> — {t.finalScore}
+        <section key={i} className="mb-4 border-b pb-3">
+          <p className="font-semibold">{t.team}</p>
+          <p className="text-sm">
+            vs {t.opponent} · {t.score} {t.isHome ? "(home)" : "(away)"}
           </p>
-
-          <h3 className="font-semibold mt-3">
-            Pregame — Readiness (RAI)
-          </h3>
-          <ul className="list-disc ml-5 text-sm mb-3">
-            {t.rai.levers.map((l, j) => (
-              <li key={j}>
-                {l.lever}: {l.value >= 0 ? "+" : ""}
-                {l.value.toFixed(2)}
-              </li>
-            ))}
-          </ul>
-
-          <h3 className="font-semibold mt-3">
-            Postgame — Execution (PAI)
-          </h3>
-          <ul className="list-disc ml-5 text-sm">
-            {t.pai.levers.map((l, j) => (
-              <li key={j}>
-                {l.lever}: {l.value >= 0 ? "+" : ""}
-                {l.value.toFixed(2)}
-              </li>
-            ))}
-          </ul>
         </section>
       ))}
 
