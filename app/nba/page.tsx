@@ -17,10 +17,7 @@ export default async function NBAPage() {
       </p>
 
       {data.snapshot.map((t: any, i: number) => (
-        <div
-          key={i}
-          className="border rounded-lg p-4 mb-4 bg-white shadow-sm"
-        >
+        <div key={i} className="border rounded-lg p-4 mb-4 shadow-sm">
           <h3 className="font-medium mb-1">
             {t.team.name} vs {t.lastGame.opponent}
           </h3>
@@ -29,11 +26,9 @@ export default async function NBAPage() {
             Last game score: {t.lastGame.score}
           </p>
 
-          {/* 🔵 RAI */}
           <h4 className="font-semibold text-sm mb-1">
             Pregame — Readiness (RAI)
           </h4>
-
           <p className="text-sm mb-1">
             Delta RAI:{" "}
             <strong>
@@ -43,29 +38,24 @@ export default async function NBAPage() {
           </p>
 
           <ul className="list-disc ml-5 text-sm mb-3">
-            {t.comparativeRAI.levers.map(
-              (l: any, j: number) => (
-                <li key={j}>
-                  {l.lever}: {l.effect}
-                  {l.weight}
-                </li>
-              )
-            )}
+            {t.comparativeRAI.levers.map((l: any, j: number) => (
+              <li key={j}>
+                {l.lever}: {l.effect}
+                {l.value}
+              </li>
+            ))}
           </ul>
 
-          {/* 🔴 PAI */}
           <h4 className="font-semibold text-sm mb-1">
             Postgame — Execution (PAI)
           </h4>
 
           <ul className="list-disc ml-5 text-sm mb-2">
-            {t.comparativePAI.levers.map(
-              (l: any, j: number) => (
-                <li key={j}>
-                  {l.lever}: {l.status}
-                </li>
-              )
-            )}
+            {t.comparativePAI.levers.map((l: any, j: number) => (
+              <li key={j}>
+                {l.lever}: {l.status}
+              </li>
+            ))}
           </ul>
 
           <p className="text-sm italic text-gray-600">
