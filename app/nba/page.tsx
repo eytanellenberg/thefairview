@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { buildNBASnapshot } from "@/lib/nbaSnapshot";
 
 function matchKey(dateUtc: string, a: string, b: string) {
