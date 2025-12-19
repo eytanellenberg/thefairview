@@ -1,10 +1,12 @@
+// app/nfl/page.tsx
+
 import { computeNFLBigScoreSnapshot } from "@/lib/nflBigScore";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function NFLPage() {
-  const data = await computeNFLBigScoreSnapshot();
+export default function NFLPage() {
+  const data = computeNFLBigScoreSnapshot();
 
   return (
     <main className="p-6 max-w-5xl mx-auto bg-white text-gray-900">
@@ -16,104 +18,65 @@ export default async function NFLPage() {
         Updated at {new Date(data.updatedAt).toLocaleString()}
       </p>
 
-      {data.matches.map((match, idx) => (
-        <section key={idx} className="mb-8 border-b pb-6">
-          <h2 className="text-xl font-semibold mb-1">
-            {match.home} vs {match.away}
-          </h2>
-
-          <p className="text-sm mb-3">
-            Final score: {match.score}
+      {data.matches.map((match, i) => (
+        <section key={i} className="mb-10 border-b pb-6">
+          <h2 className="text-xl font-semibold mb-1">{match.matchup}</h2>
+          <p className="mb-3 text-sm">
+            Final score: {match.finalScore}
           </p>
 
-          {/* RAI */}
-          <div className="mb-4">
-            <h3 className="font-semibold">
-              Pregame — Comparative Readiness (RAI)
-            </h3>
-            <p className="text-sm mb-1">
-              RAI edge:{" "}
-              <strong>
-                {match.rai.edgeTeam} ({match.rai.delta > 0 ? "+" : ""}
-                {match.rai.delta.toFixed(2)})
-              </strong>
-            </p>
-
-            <ul className="list-disc ml-5 text-sm">
-              {match.rai.levers.map(
-                (
-                  l: {
-                    lever: string;
-                    team: string;
-                    value: number;
-                  },
-                  i: number
-                ) => (
-                  <li key={i}>
-                    {l.lever}: {l.team} (
-                    {l.value >= 0 ? "+" : ""}
-                    {l.value.toFixed(2)})
-                  </li>
-                )
-              )}
-            </ul>
-          </div>
-
-          {/* PAI */}
-          <div>
-            <h3 className="font-semibold">
-              Postgame — Comparative Execution (PAI)
-            </h3>
-
-            {match.pai.map(
-              (
-                team: {
-                  team: string;
-                  score: string;
-                  levers: {
-                    lever: string;
-                    delta: number;
-                  }[];
-                },
-                i: number
-              ) => (
-                <div key={i} className="mb-2">
-                  <p className="font-medium">
-                    {team.team}
-                  </p>
-                  <p className="text-sm mb-1">
-                    Last: {team.score}
-                  </p>
-
-                  <ul className="list-disc ml-5 text-sm">
-                    {team.levers.map(
-                      (
-                        l: {
-                          lever: string;
-                          delta: number;
-                        },
-                        j: number
-                      ) => (
-                        <li key={j}>
-                          {l.lever}:{" "}
-                          {l.delta >= 0
-                            ? "Outperformed vs expectation"
-                            : "Weakened vs expectation"}{" "}
-                          ({l.delta >= 0 ? "+" : ""}
-                          {l.delta.toFixed(2)})
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </div>
+          <h3 className="font-semibold mt-4">
+            Pregame — Comparative Readiness (RAI)
+          </h3>
+          <p className="mb-2">
+            RAI edge: <strong>{match.raiEdge.team}</strong>{" "}
+            ({match.raiEdge.value.toFixed(2)})
+          </p>
+          <ul className="list-disc ml-5 text-sm mb-4">
+            {match.raiEdge.levers.map(
+              (l: { lever: string; value: number }, idx: number) => (
+                <li key={idx}>
+                  {l.lever}: {l.value >= 0 ? "+" : ""}
+                  {l.value.toFixed(2)}
+                </li>
               )
             )}
+          </ul>
 
-            <p className="text-xs text-gray-600 mt-2">
-              Outcome interpreted through execution deltas relative to pregame
-              structural expectations.
-            </p>
-          </div>
+          <h3 className="font-semibold mt-4">
+            Postgame — Comparative Execution (PAI)
+          </h3>
+
+          {[match.pai.teamA, match.pai.teamB].map(
+            (
+              t: {
+                team: string;
+                score: string;
+                levers: { lever: string; value: number }[];
+              },
+              idx: number
+            ) => (
+              <div key={idx} className="mb-4">
+                <p className="font-semibold">{t.team}</p>
+                <p className="text-sm mb-1">Last: {t.score}</p>
+                <ul className="list-disc ml-5 text-sm">
+                  {t.levers.map(
+                    (l: { lever: string; value: number }, j: number) => (
+                      <li key={j}>
+                        {l.lever}: {l.value >= 0 ? "+" : ""}
+                        {l.value.toFixed(2)}
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )
+          )}
+
+          <p className="text-sm italic mt-2">
+            Outcome interpreted through execution deltas relative to pregame
+            structural expectations.
+          </p>
         </section>
       ))}
 
@@ -122,4 +85,4 @@ export default async function NFLPage() {
       </footer>
     </main>
   );
-            }
+}
