@@ -1,3 +1,5 @@
+type Sport = "nba" | "nfl" | "mlb";
+
 type TeamRef = {
   id: string;
   name: string;
@@ -32,8 +34,21 @@ function parseGame(event: any): ESPNGame {
   };
 }
 
-async function fetchSchedule(teamId: string) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/schedule`;
+function sportPath(sport: Sport) {
+  switch (sport) {
+    case "nba":
+      return "basketball/nba";
+    case "nfl":
+      return "football/nfl";
+    case "mlb":
+      return "baseball/mlb";
+  }
+}
+
+async function fetchSchedule(sport: Sport, teamId: string) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/${sportPath(
+    sport
+  )}/teams/${teamId}/schedule`;
 
   const res = await fetch(url, {
     cache: "no-store",
@@ -47,10 +62,10 @@ async function fetchSchedule(teamId: string) {
 }
 
 export async function getLastAndNextGame(
-  league: "nba",
+  sport: Sport,
   teamId: string
 ): Promise<{ last: ESPNGame | null; next: ESPNGame | null }> {
-  const events = await fetchSchedule(teamId);
+  const events = await fetchSchedule(sport, teamId);
   const now = Date.now();
 
   const past = events
