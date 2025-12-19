@@ -37,17 +37,17 @@ export async function buildNBASnapshot() {
     const match = matches.get(key)!;
     const isHome = last.home.id === team.id;
 
+    const scoreString =
+      last.home.score !== null && last.away.score !== null
+        ? `${last.home.score} – ${last.away.score}`
+        : null;
+
     const teamBlock: TeamSnapshot = {
       team: {
         id: team.id,
         name: team.name,
       },
-      score:
-        last.home.score && last.away.score
-          ? isHome
-            ? `${last.home.score} – ${last.away.score}`
-            : `${last.away.score} – ${last.home.score}`
-          : null,
+      score: scoreString,
     };
 
     if (isHome) match.home = teamBlock;
@@ -96,4 +96,4 @@ export async function buildNBASnapshot() {
         : null,
     })),
   };
-}
+}         
