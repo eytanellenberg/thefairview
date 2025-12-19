@@ -14,7 +14,7 @@ export type ESPNGame = {
   };
 };
 
-/* ------------------ SCORE NORMALISATION ------------------ */
+/* ---------- utils ---------- */
 
 function extractScore(score: any): string | null {
   if (score == null) return null;
@@ -26,8 +26,6 @@ function extractScore(score: any): string | null {
   }
   return null;
 }
-
-/* ------------------ ESPN PARSER ------------------ */
 
 function parseGame(event: any): ESPNGame {
   const competition = event.competitions[0];
@@ -51,8 +49,6 @@ function parseGame(event: any): ESPNGame {
   };
 }
 
-/* ------------------ ESPN PATH ------------------ */
-
 function sportPath(sport: Sport) {
   switch (sport) {
     case "nba":
@@ -66,8 +62,6 @@ function sportPath(sport: Sport) {
   }
 }
 
-/* ------------------ FETCH ------------------ */
-
 async function fetchSchedule(sport: Sport, teamId: string) {
   const url = `https://site.api.espn.com/apis/site/v2/sports/${sportPath(
     sport
@@ -79,14 +73,11 @@ async function fetchSchedule(sport: Sport, teamId: string) {
   });
 
   if (!res.ok) return [];
-
   const json = await res.json();
   return json.events ?? [];
 }
 
-/* =========================================================
-   ✅ NEW API — LAST GAME ONLY (USED BY NBA SNAPSHOT)
-   ========================================================= */
+/* ---------- NEW: last game only ---------- */
 
 export async function getLastGame(
   sport: Sport,
@@ -105,9 +96,7 @@ export async function getLastGame(
   return past.length ? parseGame(past[0]) : null;
 }
 
-/* =========================================================
-   🛡 LEGACY API — DO NOT REMOVE (NFL / API LIVE)
-   ========================================================= */
+/* ---------- LEGACY: do not remove ---------- */
 
 export async function getLastAndNextGame(
   sport: Sport,
