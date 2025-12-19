@@ -1,90 +1,79 @@
 // lib/nflBigScore.ts
-// FAIR NFL — Big score (blowout-aware) PAI computation
 
-export type TeamSide = "home" | "away";
-
-export interface Lever {
+export type NFLBigScoreLever = {
   lever: string;
-  value: number; // signed delta
-}
+  value: number;
+};
 
-export interface TeamExecution {
-  team: string;
-  scoreFor: number;
-  scoreAgainst: number;
-  levers: Lever[];
-}
+export type NFLBigScoreMatch = {
+  matchup: string;
+  finalScore: string;
+  raiEdge: {
+    team: string;
+    value: number;
+    levers: NFLBigScoreLever[];
+  };
+  pai: {
+    teamA: {
+      team: string;
+      score: string;
+      levers: NFLBigScoreLever[];
+    };
+    teamB: {
+      team: string;
+      score: string;
+      levers: NFLBigScoreLever[];
+    };
+  };
+};
 
-export interface MatchPAI {
-  margin: number;
-  blowoutFactor: number;
-  home: TeamExecution;
-  away: TeamExecution;
-}
+export type NFLBigScoreSnapshot = {
+  sport: "nfl";
+  updatedAt: string;
+  matches: NFLBigScoreMatch[];
+};
 
 /**
- * Compute blowout amplification factor
- * NFL calibration (empirical / conservative)
+ * MAIN EXPORT — this is what the page imports
  */
-export function computeBlowoutFactor(margin: number): number {
-  if (margin < 7) return 1.0;        // one-score game
-  if (margin < 14) return 1.4;       // solid win
-  if (margin < 21) return 1.9;       // strong win
-  if (margin < 28) return 2.6;       // blowout
-  return 3.3;                        // massacre
-}
-
-/**
- * Generate signed PAI deltas from score margin
- */
-export function computeBigScorePAI(params: {
-  homeTeam: string;
-  awayTeam: string;
-  homeScore: number;
-  awayScore: number;
-}): MatchPAI {
-  const { homeTeam, awayTeam, homeScore, awayScore } = params;
-
-  const margin = Math.abs(homeScore - awayScore);
-  const blowoutFactor = computeBlowoutFactor(margin);
-
-  const homeWon = homeScore > awayScore;
-
-  function teamLevers(winner: boolean): Lever[] {
-    const sign = winner ? 1 : -1;
-
-    return [
-      {
-        lever: "Early-down efficiency",
-        value: +(sign * 0.45 * blowoutFactor).toFixed(2),
-      },
-      {
-        lever: "Pass protection integrity",
-        value: +(sign * 0.35 * blowoutFactor).toFixed(2),
-      },
-      {
-        lever: "Coverage matchup stress",
-        value: +(sign * 0.40 * blowoutFactor).toFixed(2),
-      },
-    ];
-  }
-
+export function computeNFLBigScoreSnapshot(): NFLBigScoreSnapshot {
   return {
-    margin,
-    blowoutFactor: +blowoutFactor.toFixed(2),
-
-    home: {
-      team: homeTeam,
-      scoreFor: homeScore,
-      scoreAgainst: awayScore,
-      levers: teamLevers(homeWon),
-    },
-
-    away: {
-      team: awayTeam,
-      scoreFor: awayScore,
-      scoreAgainst: homeScore,
-      levers: teamLevers(!homeWon),
-    },
+    sport: "nfl",
+    updatedAt: new Date().toISOString(),
+    matches: [
+      {
+        matchup: "Tampa Bay Buccaneers vs Atlanta Falcons",
+        finalScore: "28 – 29",
+        raiEdge: {
+          team: "Tampa Bay Buccaneers",
+          value: 1.96,
+          levers: [
+            { lever: "Early-down efficiency", value: 2.49 },
+            { lever: "Pass protection integrity", value: 3.94 },
+            { lever: "Coverage matchup stress", value: -4.47 }
+          ]
+        },
+        pai: {
+          teamA: {
+            team: "Tampa Bay Buccaneers",
+            score: "28 – 29",
+            levers: [
+              { lever: "Early-down efficiency", value: 0.5 },
+              { lever: "Pass protection integrity", value: -1.39 },
+              { lever: "Coverage matchup stress", value: -0.69 }
+            ]
+          },
+          teamB: {
+            team: "Atlanta Falcons",
+            score: "28 – 29",
+            levers: [
+              { lever: "Early-down efficiency", value: -0.73 },
+              { lever: "Pass protection integrity", value: -0.82 },
+              { lever: "Coverage matchup stress", value: 1.36 }
+            ]
+          }
+        }
+      }
+    ]
   };
 }
