@@ -3,8 +3,15 @@ import { computeNBAAutoSnapshot } from "@/lib/nbaAutoSnapshot";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function NBAPage() {
-  const data = await computeNBAAutoSnapshot();
+const colorMap: Record<string, string> = {
+  green: "text-green-600",
+  orange: "text-orange-500",
+  red: "text-red-600",
+  gray: "text-gray-500",
+};
+
+export default function NBAPage() {
+  const data = computeNBAAutoSnapshot();
 
   return (
     <main className="max-w-4xl mx-auto p-6 bg-white text-gray-900">
@@ -19,33 +26,25 @@ export default async function NBAPage() {
       </p>
 
       {data.matches.map((m, i) => (
-        <section key={i} className="mb-8 border-b pb-6">
+        <section key={i} className="mb-10 border-b pb-6">
           <h2 className="text-lg font-semibold">{m.matchup}</h2>
           <p className="text-sm mb-3">Final score: {m.finalScore}</p>
 
-          {/* ================= RAI ================= */}
-          <h3 className="font-semibold mt-3">
-            Pregame — Comparative Readiness (RAI)
-          </h3>
+          <h3 className="font-semibold">Pregame — Comparative Readiness (RAI)</h3>
           <p className="mb-2">
-            RAI edge: <strong>{m.rai.edge}</strong>{" "}
-            ({m.rai.value >= 0 ? "+" : ""}
-            {m.rai.value.toFixed(2)})
+            RAI edge: <strong>{m.rai.edge}</strong> (+{m.rai.value})
           </p>
 
           <ul className="list-disc ml-5 text-sm mb-4">
             {m.rai.levers.map((l, j) => (
               <li key={j}>
-                {l.label}: {l.value >= 0 ? "+" : ""}
+                {l.label}: {l.value > 0 ? "+" : ""}
                 {l.value.toFixed(2)}
               </li>
             ))}
           </ul>
 
-          {/* ================= PAI ================= */}
-          <h3 className="font-semibold mt-3">
-            Postgame — Comparative Execution (PAI)
-          </h3>
+          <h3 className="font-semibold">Postgame — Comparative Execution (PAI)</h3>
 
           {[m.pai.teamA, m.pai.teamB].map((t, k) => (
             <div key={k} className="mb-3">
@@ -53,13 +52,24 @@ export default async function NBAPage() {
               <ul className="list-disc ml-5 text-sm">
                 {t.levers.map((l, j) => (
                   <li key={j}>
-                    {l.label}: {l.value >= 0 ? "+" : ""}
+                    {l.label}: {l.value > 0 ? "+" : ""}
                     {l.value.toFixed(2)}
                   </li>
                 ))}
               </ul>
             </div>
           ))}
+
+          <h3 className="font-semibold mt-3">FAIR Surprise</h3>
+          <p
+            className={`text-sm font-medium ${
+              colorMap[m.fairSurprise.color]
+            }`}
+          >
+            {m.fairSurprise.label} (
+            {m.fairSurprise.value > 0 ? "+" : ""}
+            {m.fairSurprise.value})
+          </p>
 
           <p className="text-xs italic mt-2">
             Outcome interpreted through execution deltas relative to pregame
