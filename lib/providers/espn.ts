@@ -1,4 +1,12 @@
+/* =========================================================
+   ESPN PROVIDER — NORMALISATION UNIQUE
+   Compatible NBA / NFL / Soccer
+   + Backward compatibility (getLastAndNextGame)
+   ========================================================= */
+
 export type ESPNCompetitor = {
+  id?: string;
+  type?: "home" | "away";
   homeAway?: "home" | "away";
   team?: {
     displayName?: string;
@@ -15,7 +23,7 @@ export type ESPNCompetition = {
   status?: {
     type?: {
       name?: string;
-      state?: string;
+      state?: string; // pre | in | post
       completed?: boolean;
     };
   };
@@ -54,22 +62,28 @@ function numScore(s?: string): number | null {
 
 function toStatus(ev: ESPNEvent): NormalizedGame["status"] {
   const t = ev.competitions?.[0]?.status?.type;
-  if (t?.completed || t?.name?.toUpperCase().includes("FINAL")) return "FINAL";
-  if (t?.state === "pre") return "SCHEDULED";
-  if (t?.state === "in") return "IN_PROGRESS";
+  const name = (t?.name || "").toUpperCase();
+  const state = (t?.state || "").toLowerCase();
+
+  if (t?.completed || name.includes("FINAL") || state === "post") return "FINAL";
+  if (state === "pre") return "SCHEDULED";
+  if (state === "in") return "IN_PROGRESS";
   return "UNKNOWN";
 }
 
 function pickTeams(ev: ESPNEvent) {
-  const competitors = ev.competitions?.[0]?.competitors || [];
+  const comps = ev.competitions?.[0];
+  const c = comps?.competitors || [];
 
-  const home = competitors.find((c) => c.homeAway === "home");
-  const away = competitors.find((c) => c.homeAway === "away");
+  const home =
+    c.find((x) => x.homeAway === "home" || x.type === "home") || null;
+  const away =
+    c.find((x) => x.homeAway === "away" || x.type === "away") || null;
 
   const homeScore = numScore(home?.score);
   const awayScore = numScore(away?.score);
 
-  let winner: "HOME" | "AWAY" | null = null;
+  let winner: NormalizedGame["winner"] = null;
   if (home?.winner) winner = "HOME";
   if (away?.winner) winner = "AWAY";
   if (!winner && homeScore !== null && awayScore !== null) {
@@ -79,18 +93,26 @@ function pickTeams(ev: ESPNEvent) {
 
   return {
     home: {
-      name: home?.team?.displayName || "Home",
+      name:
+        home?.team?.displayName ||
+        home?.team?.shortDisplayName ||
+        "Home",
       abbr: home?.team?.abbreviation,
       score: homeScore,
     },
     away: {
-      name: away?.team?.displayName || "Away",
+      name:
+        away?.team?.displayName ||
+        away?.team?.shortDisplayName ||
+        "Away",
       abbr: away?.team?.abbreviation,
       score: awayScore,
     },
     winner,
   };
 }
+
+/* ================= FETCH ================= */
 
 async function fetchScoreboard(
   league: string,
@@ -99,11 +121,16 @@ async function fetchScoreboard(
   const url = new URL(
     `https://site.api.espn.com/apis/site/v2/sports/${league}/scoreboard`
   );
+
   Object.entries(params).forEach(([k, v]) =>
     url.searchParams.set(k, v)
   );
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await fetch(url.toString(), {
+    next: { revalidate: 0 },
+  });
+
+  if (!res.ok) throw new Error("ESPN fetch error");
   const json = await res.json();
   return (json?.events || []) as ESPNEvent[];
 }
@@ -111,44 +138,97 @@ async function fetchScoreboard(
 function normalize(events: ESPNEvent[]): NormalizedGame[] {
   return events
     .map((ev) => {
-      if (!ev.id) return null;
+      const id = String(ev.id || "");
+      const dateUtc =
+        String(ev.date || ev.competitions?.[0]?.date || "");
+      if (!id || !dateUtc) return null;
 
       const status = toStatus(ev);
-      const dateUtc = ev.date || ev.competitions?.[0]?.date;
-      if (!dateUtc) return null;
-
       const { home, away, winner } = pickTeams(ev);
 
       return {
-        id: String(ev.id),
+        id,
         dateUtc,
         status,
         home,
         away,
         winner,
-      };
+      } as NormalizedGame;
     })
     .filter(Boolean) as NormalizedGame[];
 }
 
 /* ================= PUBLIC API ================= */
 
-/** NBA — LOOKBACK 7 JOURS (CRUCIAL) */
 export async function getNBAGames(): Promise<NormalizedGame[]> {
-  const all: NormalizedGame[] = [];
+  const events = await fetchScoreboard("basketball/nba");
+  return normalize(events);
+}
 
-  for (let i = 0; i < 7; i++) {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - i);
-    const ymd = d.toISOString().slice(0, 10).replace(/-/g, "");
+export async function getNFLGames(): Promise<NormalizedGame[]> {
+  const events = await fetchScoreboard("football/nfl");
+  return normalize(events);
+}
 
-    const events = await fetchScoreboard("basketball/nba", { dates: ymd });
-    all.push(...normalize(events));
+export async function getSoccerGames(
+  league = "soccer/fra.1"
+): Promise<NormalizedGame[]> {
+  const events = await fetchScoreboard(league);
+  return normalize(events);
+}
+
+/* ======================================================
+   ✅ BACKWARD COMPAT — REQUIRED FOR BUILD
+   ====================================================== */
+
+export async function getLastAndNextGame(leagueKey: string) {
+  let games: NormalizedGame[] = [];
+
+  if (leagueKey === "nba") games = await getNBAGames();
+  else if (leagueKey === "nfl") games = await getNFLGames();
+  else if (leagueKey.startsWith("soccer")) {
+    const lg = leagueKey.split(":")[1] || "soccer/fra.1";
+    games = await getSoccerGames(lg);
+  } else {
+    games = await getNBAGames();
   }
 
-  // dédup
-  const map = new Map<string, NormalizedGame>();
-  all.forEach((g) => map.set(g.id, g));
+  const now = Date.now();
 
-  return [...map.values()];
+  const sorted = [...games].sort(
+    (a, b) =>
+      new Date(a.dateUtc).getTime() -
+      new Date(b.dateUtc).getTime()
+  );
+
+  const last =
+    [...sorted]
+      .reverse()
+      .find(
+        (g) =>
+          g.status === "FINAL" &&
+          new Date(g.dateUtc).getTime() <= now
+      ) || null;
+
+  const next =
+    sorted.find(
+      (g) =>
+        g.status !== "FINAL" &&
+        new Date(g.dateUtc).getTime() > now
+    ) || null;
+
+  return { last, next };
 }
+
+export async function getLastSoccerGame(
+  league = "soccer/fra.1"
+) {
+  const games = await getSoccerGames(league);
+  const finals = games.filter((g) => g.status === "FINAL");
+  finals.sort(
+    (a, b) =>
+      new Date(b.dateUtc).getTime() -
+      new Date(a.dateUtc).getTime()
+  );
+  return finals[0] || null;
+    }
