@@ -99,3 +99,9 @@ export async function getLastAndNextGame() {
     next: null,
   };
 }
+/* ================= NFL ================= */
+
+export async function getNFLGames(): Promise<NormalizedGame[]> {
+  const json = await fetchScoreboard("football/nfl");
+  return json.events.map(normalize).filter(Boolean);
+}
