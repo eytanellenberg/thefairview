@@ -73,7 +73,7 @@ function computeRAI(g: NormalizedGame) {
   const edgeTeam = raw >= 0 ? g.home.name : g.away.name;
 
   return {
-    edgeTeam,
+    edge: edgeTeam,
     value: r2(Math.abs(raw)),
     levers: [
       { label: "Home-field advantage", value: r2(homeField * (raw >= 0 ? 1 : -1)) },
@@ -120,7 +120,7 @@ function computePAI(g: NormalizedGame) {
 
 /* ================= SURPRISE ================= */
 
-function surpriseLevel(score: number) {
+function surpriseLevel(score: number): "MINOR" | "MODERATE" | "MAJOR" {
   if (score < 0.75) return "MINOR";
   if (score < 1.75) return "MODERATE";
   return "MAJOR";
@@ -135,20 +135,20 @@ function computeSurprise(
     return {
       isSurprise: false,
       winner: "—",
-      raiFavored: rai.edgeTeam,
+      raiFavored: rai.edge,
       score: 0,
       level: "NONE",
     };
   }
 
   const winner = g.winner === "HOME" ? g.home.name : g.away.name;
-  const isSurprise = winner !== rai.edgeTeam;
+  const isSurprise = winner !== rai.edge;
 
   if (!isSurprise) {
     return {
       isSurprise: false,
       winner,
-      raiFavored: rai.edgeTeam,
+      raiFavored: rai.edge,
       score: 0,
       level: "NONE",
     };
@@ -159,7 +159,7 @@ function computeSurprise(
   return {
     isSurprise: true,
     winner,
-    raiFavored: rai.edgeTeam,
+    raiFavored: rai.edge,
     score,
     level: surpriseLevel(score),
   };
@@ -195,4 +195,21 @@ export async function computeNFLAutoSnapshot(): Promise<NFLAutoSnapshot> {
 
   const takeaway =
     alignmentRate >= 80
-      ? "This NFL slate was structur
+      ? "This NFL slate was structurally stable: most games followed pregame readiness signals (RAI)."
+      : alignmentRate >= 60
+      ? "This week showed moderate volatility between structure (RAI) and execution (PAI)."
+      : "This NFL slate was highly volatile, with execution frequently overriding pregame expectations.";
+
+  return {
+    updatedAt: new Date().toISOString(),
+    matches,
+    topSurprises: surprises.slice(0, 5).map((m) => m.surprise),
+    weeklySummary: {
+      games: matches.length,
+      noSurprise,
+      surprises: surprises.length,
+      alignmentRate,
+      takeaway,
+    },
+  };
+}
