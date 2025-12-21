@@ -1,84 +1,57 @@
-import { getNBALastGames } from "@/lib/providers/espn";
+import { getNBAGames } from "@/lib/providers/espn";
 
-export type NBAMatch = {
+export type NBAMatchFAIR = {
   matchup: string;
   finalScore: string;
   rai: {
-    edgeTeam: string;
+    edge: string;
     value: number;
     levers: { label: string; value: number }[];
   };
   pai: {
-    team: string;
-    score: string;
-    levers: { label: string; value: number }[];
-  }[];
+    teamA: {
+      name: string;
+      levers: { label: string; value: number }[];
+    };
+    teamB: {
+      name: string;
+      levers: { label: string; value: number }[];
+    };
+  };
 };
 
-export type NBASnapshot = {
-  sport: "nba";
-  updatedAt: string;
-  matches: NBAMatch[];
-};
+export function computeNBAAutoSnapshot() {
+  const games = getNBAGames()
+    .filter(g => g.status === "FINAL");
 
-function mockRecentFormDelta(): number {
-  // simulé mais cohérent (−3 à +3)
-  return Number((Math.random() * 6 - 3).toFixed(2));
-}
+  const matches: NBAMatchFAIR[] = games.map(game => {
+    const home = game.home;
+    const away = game.away;
 
-export async function computeNBASnapshot(): Promise<NBASnapshot> {
-  const games = await getNBALastGames();
+    const formDelta =
+      (home.recentMargin - away.recentMargin) * 0.6;
 
-  const matches: NBAMatch[] = games.map((g) => {
-    const home = g.competitors.find((c) => c.homeAway === "home")!;
-    const away = g.competitors.find((c) => c.homeAway === "away")!;
+    const defenseDelta =
+      (away.defensiveRating - home.defensiveRating) * 0.4;
 
-    const homeScore = Number(home.score);
-    const awayScore = Number(away.score);
-    const diff = homeScore - awayScore;
+    const raiValue = Number((formDelta + defenseDelta).toFixed(2));
 
-    // -------- RAI (forme récente + home)
-    const formDelta = mockRecentFormDelta();
-    const homeAdv = 0.4;
-    const raiValue = Number((formDelta + homeAdv).toFixed(2));
-    const raiEdgeTeam = raiValue >= 0 ? home.team.displayName : away.team.displayName;
+    const winner =
+      home.score > away.score ? home.name : away.name;
 
-    // -------- PAI (écart réel normalisé)
-    const paiDelta = Number((diff / 10).toFixed(2));
+    const scoreDiff = home.score - away.score;
 
     return {
-      matchup: `${home.team.displayName} vs ${away.team.displayName}`,
-      finalScore: `${homeScore} – ${awayScore}`,
+      matchup: `${home.name} vs ${away.name}`,
+      finalScore: `${home.score} – ${away.score}`,
       rai: {
-        edgeTeam: raiEdgeTeam,
+        edge: raiValue >= 0 ? home.name : away.name,
         value: Math.abs(raiValue),
         levers: [
-          { label: "Recent form (last 5)", value: formDelta },
-          { label: "Home-court context", value: homeAdv },
-        ],
-      },
-      pai: [
-        {
-          team: home.team.displayName,
-          score: `${homeScore} – ${awayScore}`,
-          levers: [
-            { label: "Score vs expectation", value: paiDelta },
-          ],
-        },
-        {
-          team: away.team.displayName,
-          score: `${awayScore} – ${homeScore}`,
-          levers: [
-            { label: "Score vs expectation", value: -paiDelta },
-          ],
-        },
-      ],
-    };
-  });
-
-  return {
-    sport: "nba",
-    updatedAt: new Date().toISOString(),
-    matches,
-  };
-}
+          {
+            label: "Recent form (last 5)",
+            value: Number(formDelta.toFixed(2)),
+          },
+          {
+            label: "Defensive rating trend",
+            value:
