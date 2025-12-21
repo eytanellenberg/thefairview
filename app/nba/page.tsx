@@ -1,12 +1,10 @@
-// app/nba/page.tsx
-
 import { computeNBALastGamesSnapshot } from "@/lib/nbaLastGamesSnapshot";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function NBAPage() {
-  const data = await computeNBALastGamesSnapshot();
+export default function NBAPage() {
+  const data = computeNBALastGamesSnapshot();
 
   return (
     <main className="p-6 max-w-5xl mx-auto bg-white text-gray-900">
@@ -16,67 +14,71 @@ export default async function NBAPage() {
 
       <p className="text-sm text-gray-600 mb-6">
         Last completed games · Updated at{" "}
-        {new Date(data.updatedAt).toLocaleString()} · Matches: {data.matches.length}
+        {new Date(data.updatedAt).toLocaleString()} · Matches:{" "}
+        {data.matches.length}
       </p>
 
-      <h2 className="text-lg font-semibold mb-4">Played matches</h2>
-
       {data.matches.map((match, i) => (
-        <section key={i} className="border rounded-lg p-4 mb-4 bg-white shadow-sm">
-          <h3 className="font-medium mb-1">
-            {match.home.name} vs {match.away.name}
+        <section
+          key={i}
+          className="mb-10 border rounded-lg p-4 bg-white shadow-sm"
+        >
+          {/* MATCHUP */}
+          <h2 className="text-xl font-semibold mb-1">
+            {match.matchup}
+          </h2>
+
+          <p className="text-sm mb-3">
+            Final score: {match.finalScore}
+          </p>
+
+          {/* RAI */}
+          <h3 className="font-semibold mt-4">
+            Pregame — Comparative Readiness (RAI)
           </h3>
 
-          <p className="text-sm mb-3">Final score: {match.finalScore}</p>
+          <p className="mb-2">
+            RAI edge:{" "}
+            <strong>{match.rai.edge.team}</strong>{" "}
+            ({match.rai.edge.value >= 0 ? "+" : ""}
+            {match.rai.edge.value.toFixed(2)})
+          </p>
 
-          {/* 🔵 RAI */}
-          <div className="mb-4">
-            <h4 className="font-semibold text-sm mb-1">
-              Pregame — Comparative Readiness (RAI)
-            </h4>
+          <ul className="list-disc ml-5 text-sm mb-4">
+            {match.rai.levers.map((l, idx) => (
+              <li key={idx}>
+                {l.lever}:{" "}
+                {l.value >= 0 ? "+" : ""}
+                {l.value.toFixed(2)}
+              </li>
+            ))}
+          </ul>
 
-            <p className="text-sm mb-2">
-              RAI edge:{" "}
-              <strong>
-                {match.rai.edgeTeam} (+{Math.abs(match.rai.edgeValue).toFixed(2)})
-              </strong>
-            </p>
+          {/* PAI */}
+          <h3 className="font-semibold mt-4">
+            Postgame — Comparative Execution (PAI)
+          </h3>
 
-            <ul className="list-disc ml-5 text-sm">
-              {match.rai.levers.map((l: { lever: string; value: number }, idx: number) => (
-                <li key={idx}>
-                  {l.lever}: {l.value >= 0 ? "+" : ""}
-                  {l.value.toFixed(2)}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {[match.pai.teamA, match.pai.teamB].map((team, idx) => (
+            <div key={idx} className="mb-4">
+              <p className="font-semibold">{team.team}</p>
+              <p className="text-sm mb-1">Last: {team.score}</p>
 
-          {/* 🔴 PAI */}
-          <div className="mb-2">
-            <h4 className="font-semibold text-sm mb-1">
-              Postgame — Comparative Execution (PAI)
-            </h4>
+              <ul className="list-disc ml-5 text-sm">
+                {team.levers.map((l, j) => (
+                  <li key={j}>
+                    {l.lever}:{" "}
+                    {l.value >= 0 ? "+" : ""}
+                    {l.value.toFixed(2)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
-            {[match.pai.home, match.pai.away].map(
-              (t: { team: string; levers: { lever: string; value: number }[] }, j: number) => (
-                <div key={j} className="mb-2">
-                  <strong>{t.team}</strong>
-                  <ul className="list-disc ml-5 text-sm">
-                    {t.levers.map((l: { lever: string; value: number }, k: number) => (
-                      <li key={k}>
-                        {l.lever}: {l.value >= 0 ? "+" : ""}
-                        {l.value.toFixed(2)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )
-            )}
-          </div>
-
-          <p className="text-sm italic text-gray-600">
-            Outcome interpreted through execution deltas relative to pregame structural expectations.
+          <p className="text-sm italic mt-2">
+            Outcome interpreted through execution deltas relative to pregame
+            structural expectations.
           </p>
         </section>
       ))}
