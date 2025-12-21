@@ -1,10 +1,10 @@
-import { computeNBALastGamesSnapshot } from "@/lib/nbaLastGamesSnapshot";
+import { computeNBASnapshot } from "@/lib/nbaAutoSnapshot";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function NBAPage() {
-  const data = computeNBALastGamesSnapshot();
+export default async function NBAPage() {
+  const data = await computeNBASnapshot();
 
   return (
     <main className="p-6 max-w-5xl mx-auto bg-white text-gray-900">
@@ -18,58 +18,39 @@ export default function NBAPage() {
         {data.matches.length}
       </p>
 
-      {data.matches.map((match, i) => (
-        <section
-          key={i}
-          className="mb-10 border rounded-lg p-4 bg-white shadow-sm"
-        >
-          {/* MATCHUP */}
-          <h2 className="text-xl font-semibold mb-1">
-            {match.matchup}
-          </h2>
+      {data.matches.map((m, i) => (
+        <section key={i} className="mb-10 border-b pb-6">
+          <h2 className="text-xl font-semibold mb-1">{m.matchup}</h2>
+          <p className="mb-3 text-sm">Final score: {m.finalScore}</p>
 
-          <p className="text-sm mb-3">
-            Final score: {match.finalScore}
-          </p>
-
-          {/* RAI */}
           <h3 className="font-semibold mt-4">
             Pregame — Comparative Readiness (RAI)
           </h3>
-
           <p className="mb-2">
-            RAI edge:{" "}
-            <strong>{match.rai.edge.team}</strong>{" "}
-            ({match.rai.edge.value >= 0 ? "+" : ""}
-            {match.rai.edge.value.toFixed(2)})
+            RAI edge: <strong>{m.rai.edgeTeam}</strong> (+{m.rai.value})
           </p>
-
           <ul className="list-disc ml-5 text-sm mb-4">
-            {match.rai.levers.map((l, idx) => (
-              <li key={idx}>
-                {l.lever}:{" "}
-                {l.value >= 0 ? "+" : ""}
-                {l.value.toFixed(2)}
+            {m.rai.levers.map((l, j) => (
+              <li key={j}>
+                {l.label}: {l.value >= 0 ? "+" : ""}
+                {l.value}
               </li>
             ))}
           </ul>
 
-          {/* PAI */}
           <h3 className="font-semibold mt-4">
             Postgame — Comparative Execution (PAI)
           </h3>
 
-          {[match.pai.teamA, match.pai.teamB].map((team, idx) => (
-            <div key={idx} className="mb-4">
-              <p className="font-semibold">{team.team}</p>
-              <p className="text-sm mb-1">Last: {team.score}</p>
-
+          {m.pai.map((t, j) => (
+            <div key={j} className="mb-4">
+              <p className="font-semibold">{t.team}</p>
+              <p className="text-sm mb-1">Last: {t.score}</p>
               <ul className="list-disc ml-5 text-sm">
-                {team.levers.map((l, j) => (
-                  <li key={j}>
-                    {l.lever}:{" "}
-                    {l.value >= 0 ? "+" : ""}
-                    {l.value.toFixed(2)}
+                {t.levers.map((l, k) => (
+                  <li key={k}>
+                    {l.label}: {l.value >= 0 ? "+" : ""}
+                    {l.value}
                   </li>
                 ))}
               </ul>
