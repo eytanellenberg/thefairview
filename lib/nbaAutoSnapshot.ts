@@ -21,23 +21,15 @@ export type NBAMatchFAIR = {
 };
 
 export function computeNBAAutoSnapshot() {
-  const games = getNBAGames()
-    .filter(g => g.status === "FINAL");
+  const games = getNBAGames().filter(g => g.status === "FINAL");
 
   const matches: NBAMatchFAIR[] = games.map(game => {
     const home = game.home;
     const away = game.away;
 
-    const formDelta =
-      (home.recentMargin - away.recentMargin) * 0.6;
-
-    const defenseDelta =
-      (away.defensiveRating - home.defensiveRating) * 0.4;
-
+    const formDelta = (home.recentMargin - away.recentMargin) * 0.6;
+    const defenseDelta = (away.defensiveRating - home.defensiveRating) * 0.4;
     const raiValue = Number((formDelta + defenseDelta).toFixed(2));
-
-    const winner =
-      home.score > away.score ? home.name : away.name;
 
     const scoreDiff = home.score - away.score;
 
@@ -54,4 +46,34 @@ export function computeNBAAutoSnapshot() {
           },
           {
             label: "Defensive rating trend",
-            value:
+            value: Number(defenseDelta.toFixed(2)),
+          },
+        ],
+      },
+      pai: {
+        teamA: {
+          name: home.name,
+          levers: [
+            { label: "Offensive execution", value: scoreDiff * 0.15 },
+            { label: "Shot conversion", value: scoreDiff * 0.1 },
+            { label: "Defensive resistance", value: scoreDiff * 0.12 },
+          ],
+        },
+        teamB: {
+          name: away.name,
+          levers: [
+            { label: "Offensive execution", value: -scoreDiff * 0.15 },
+            { label: "Shot conversion", value: -scoreDiff * 0.1 },
+            { label: "Defensive resistance", value: -scoreDiff * 0.12 },
+          ],
+        },
+      },
+    };
+  });
+
+  return {
+    sport: "nba",
+    updatedAt: new Date().toISOString(),
+    matches,
+  };
+}
