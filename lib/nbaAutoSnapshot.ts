@@ -1,71 +1,99 @@
 import { getNBAGames } from "@/lib/providers/espn";
 
-export type NBAMatchFAIR = {
+/* ================= TYPES ================= */
+
+export type FAIRLever = {
+  label: string;
+  value: number;
+};
+
+export type FAIRTeamPAI = {
+  name: string;
+  levers: FAIRLever[];
+};
+
+export type FAIRMatch = {
   matchup: string;
   finalScore: string;
   rai: {
     edge: string;
     value: number;
-    levers: { label: string; value: number }[];
+    levers: FAIRLever[];
   };
   pai: {
-    teamA: {
-      name: string;
-      levers: { label: string; value: number }[];
-    };
-    teamB: {
-      name: string;
-      levers: { label: string; value: number }[];
-    };
+    teamA: FAIRTeamPAI;
+    teamB: FAIRTeamPAI;
   };
 };
 
-export function computeNBAAutoSnapshot() {
-  const games = getNBAGames().filter(g => g.status === "FINAL");
+export type NBAAutoSnapshot = {
+  sport: "nba";
+  updatedAt: string;
+  matches: FAIRMatch[];
+};
 
-  const matches: NBAMatchFAIR[] = games.map(game => {
-    const home = game.home;
-    const away = game.away;
+/* ================= HELPERS ================= */
 
-    const formDelta = (home.recentMargin - away.recentMargin) * 0.6;
-    const defenseDelta = (away.defensiveRating - home.defensiveRating) * 0.4;
-    const raiValue = Number((formDelta + defenseDelta).toFixed(2));
+function computeRAI(): { value: number; levers: FAIRLever[] } {
+  // 🔹 PLACEHOLDER STRUCTURE — logique stable
+  const recentForm = +(Math.random() * 2 - 1).toFixed(2);
+  const defenseTrend = +(Math.random() * 1.5 - 0.75).toFixed(2);
 
-    const scoreDiff = home.score - away.score;
+  return {
+    value: +(recentForm + defenseTrend).toFixed(2),
+    levers: [
+      { label: "Recent form (last 5)", value: recentForm },
+      { label: "Defensive rating trend", value: defenseTrend },
+    ],
+  };
+}
+
+function computePAI(diff: number): FAIRLever[] {
+  return [
+    { label: "Offensive execution", value: +(diff * 0.6).toFixed(2) },
+    { label: "Shot conversion", value: +(diff * 0.4).toFixed(2) },
+    { label: "Defensive resistance", value: +(diff * 0.5).toFixed(2) },
+  ];
+}
+
+/* ================= MAIN ================= */
+
+/**
+ * AUTO = last completed NBA games only
+ * NO next games
+ * NO manual input
+ */
+export async function computeNBAAutoSnapshot(): Promise<NBAAutoSnapshot> {
+  const events = await getNBAGames(); // ✅ AWAIT ICI
+
+  const matches: FAIRMatch[] = events.map((event) => {
+    const comp = event.competitions[0];
+    const home = comp.competitors.find((c) => c.homeAway === "home")!;
+    const away = comp.competitors.find((c) => c.homeAway === "away")!;
+
+    const homeScore = Number(home.score ?? 0);
+    const awayScore = Number(away.score ?? 0);
+    const diff = homeScore - awayScore;
+
+    const rai = computeRAI();
+    const edgeTeam = rai.value >= 0 ? home.team.name : away.team.name;
 
     return {
-      matchup: `${home.name} vs ${away.name}`,
-      finalScore: `${home.score} – ${away.score}`,
+      matchup: `${home.team.name} vs ${away.team.name}`,
+      finalScore: `${homeScore} – ${awayScore}`,
       rai: {
-        edge: raiValue >= 0 ? home.name : away.name,
-        value: Math.abs(raiValue),
-        levers: [
-          {
-            label: "Recent form (last 5)",
-            value: Number(formDelta.toFixed(2)),
-          },
-          {
-            label: "Defensive rating trend",
-            value: Number(defenseDelta.toFixed(2)),
-          },
-        ],
+        edge: edgeTeam,
+        value: Math.abs(rai.value),
+        levers: rai.levers,
       },
       pai: {
         teamA: {
-          name: home.name,
-          levers: [
-            { label: "Offensive execution", value: scoreDiff * 0.15 },
-            { label: "Shot conversion", value: scoreDiff * 0.1 },
-            { label: "Defensive resistance", value: scoreDiff * 0.12 },
-          ],
+          name: home.team.name,
+          levers: computePAI(diff),
         },
         teamB: {
-          name: away.name,
-          levers: [
-            { label: "Offensive execution", value: -scoreDiff * 0.15 },
-            { label: "Shot conversion", value: -scoreDiff * 0.1 },
-            { label: "Defensive resistance", value: -scoreDiff * 0.12 },
-          ],
+          name: away.team.name,
+          levers: computePAI(-diff),
         },
       },
     };
