@@ -1,84 +1,84 @@
+// app/nba/page.tsx
+
+import { computeNBALastGamesSnapshot } from "@/lib/nbaLastGamesSnapshot";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { buildNBASnapshot } from "@/lib/nbaSnapshot";
-
 export default async function NBAPage() {
-  const data = await buildNBASnapshot();
+  const data = await computeNBALastGamesSnapshot();
 
   return (
-    <main className="p-6 max-w-5xl mx-auto text-gray-900 bg-white">
+    <main className="p-6 max-w-5xl mx-auto bg-white text-gray-900">
       <h1 className="text-2xl font-semibold mb-2">
-        NBA — Comparative RAI (real) + Postgame PAI (last game)
+        NBA — Match-based FAIR Analysis
       </h1>
 
-      <p className="text-xs text-gray-500 mb-6">
-        Updated at {data.updatedAt}
+      <p className="text-sm text-gray-600 mb-6">
+        Last completed games · Updated at{" "}
+        {new Date(data.updatedAt).toLocaleString()} · Matches: {data.matches.length}
       </p>
 
-      {data.snapshot.map((m: any, i: number) => (
-        <div key={i} className="border rounded-lg p-4 mb-6 shadow-sm">
-          <h2 className="font-medium text-lg mb-1">{m.matchup}</h2>
-          <p className="text-xs text-gray-500 mb-3">
-            Next game (UTC): {m.nextGameUtc}
-          </p>
+      <h2 className="text-lg font-semibold mb-4">Played matches</h2>
 
-          <h3 className="font-semibold text-sm mb-1">
-            Pregame — Comparative Readiness (RAI)
+      {data.matches.map((match, i) => (
+        <section key={i} className="border rounded-lg p-4 mb-4 bg-white shadow-sm">
+          <h3 className="font-medium mb-1">
+            {match.home.name} vs {match.away.name}
           </h3>
 
-          <p className="text-sm mb-2">
-            <strong>
-              Delta RAI (A − B): {m.pregameRAI.delta.toFixed(2)}
-            </strong>{" "}
-            → advantage <strong>{m.pregameRAI.favoredTeam}</strong>
-          </p>
+          <p className="text-sm mb-3">Final score: {match.finalScore}</p>
 
-          <ul className="list-disc ml-5 text-sm mb-4">
-            {m.pregameRAI.levers.map((l: any, j: number) => (
-              <li key={j}>
-                {l.lever}: {l.value >= 0 ? "+" : ""}
-                {l.value.toFixed(2)}
-              </li>
-            ))}
-          </ul>
+          {/* 🔵 RAI */}
+          <div className="mb-4">
+            <h4 className="font-semibold text-sm mb-1">
+              Pregame — Comparative Readiness (RAI)
+            </h4>
 
-          <h3 className="font-semibold text-sm mb-1">
-            Postgame — Execution (PAI)
-          </h3>
+            <p className="text-sm mb-2">
+              RAI edge:{" "}
+              <strong>
+                {match.rai.edgeTeam} (+{Math.abs(match.rai.edgeValue).toFixed(2)})
+              </strong>
+            </p>
 
-          <p className="text-xs text-gray-500 mb-2">{m.postgamePAI.note}</p>
-
-          <div className="text-sm mb-3">
-            <strong>{m.postgamePAI.A.team}</strong> — last:{" "}
-            {m.postgamePAI.A.lastScore}
-            <ul className="list-disc ml-5">
-              {m.postgamePAI.A.levers.map((x: any, k: number) => (
-                <li key={k}>
-                  {x.lever}: {x.status}
+            <ul className="list-disc ml-5 text-sm">
+              {match.rai.levers.map((l: { lever: string; value: number }, idx: number) => (
+                <li key={idx}>
+                  {l.lever}: {l.value >= 0 ? "+" : ""}
+                  {l.value.toFixed(2)}
                 </li>
               ))}
             </ul>
-            <p className="italic text-gray-600">
-              {m.postgamePAI.A.conclusion}
-            </p>
           </div>
 
-          <div className="text-sm">
-            <strong>{m.postgamePAI.B.team}</strong> — last:{" "}
-            {m.postgamePAI.B.lastScore}
-            <ul className="list-disc ml-5">
-              {m.postgamePAI.B.levers.map((x: any, k: number) => (
-                <li key={k}>
-                  {x.lever}: {x.status}
-                </li>
-              ))}
-            </ul>
-            <p className="italic text-gray-600">
-              {m.postgamePAI.B.conclusion}
-            </p>
+          {/* 🔴 PAI */}
+          <div className="mb-2">
+            <h4 className="font-semibold text-sm mb-1">
+              Postgame — Comparative Execution (PAI)
+            </h4>
+
+            {[match.pai.home, match.pai.away].map(
+              (t: { team: string; levers: { lever: string; value: number }[] }, j: number) => (
+                <div key={j} className="mb-2">
+                  <strong>{t.team}</strong>
+                  <ul className="list-disc ml-5 text-sm">
+                    {t.levers.map((l: { lever: string; value: number }, k: number) => (
+                      <li key={k}>
+                        {l.lever}: {l.value >= 0 ? "+" : ""}
+                        {l.value.toFixed(2)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            )}
           </div>
-        </div>
+
+          <p className="text-sm italic text-gray-600">
+            Outcome interpreted through execution deltas relative to pregame structural expectations.
+          </p>
+        </section>
       ))}
 
       <footer className="text-xs text-gray-500 mt-10">
