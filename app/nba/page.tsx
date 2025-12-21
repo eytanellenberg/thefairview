@@ -3,30 +3,41 @@ import { computeNBAAutoSnapshot } from "@/lib/nbaAutoSnapshot";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function levelBadge(level: "MINOR" | "MODERATE" | "MAJOR") {
+/* ================= UI HELPERS ================= */
+
+function levelBadge(level: "NONE" | "MINOR" | "MODERATE" | "MAJOR") {
   if (level === "MAJOR") return "bg-red-100 text-red-800 border-red-200";
   if (level === "MODERATE") return "bg-orange-100 text-orange-800 border-orange-200";
-  return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  if (level === "MINOR") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  return "bg-gray-100 text-gray-700 border-gray-200"; // NONE
 }
+
+/* ================= PAGE ================= */
 
 export default async function NBAPage() {
   const data = await computeNBAAutoSnapshot();
 
   return (
     <main className="max-w-4xl mx-auto p-6 bg-white text-gray-900">
-      <h1 className="text-2xl font-semibold mb-1">NBA — Match-based FAIR Analysis</h1>
+      {/* HEADER */}
+      <h1 className="text-2xl font-semibold mb-1">
+        NBA — Match-based FAIR Analysis
+      </h1>
 
       <p className="text-sm text-gray-600 mb-6">
-        Last completed games · Updated at {new Date(data.updatedAt).toLocaleString()} · Matches:{" "}
+        Last completed games · Updated at{" "}
+        {new Date(data.updatedAt).toLocaleString()} · Matches:{" "}
         {data.matches.length}
       </p>
 
-      {/* 🔥 TOP SURPRISES BOX */}
-      <section className="mb-8 border rounded-lg p-4 bg-gray-50">
+      {/* 🔥 TOP FAIR SURPRISES */}
+      <section className="mb-10 border rounded-lg p-4 bg-gray-50">
         <h2 className="text-lg font-semibold mb-3">🔥 Top FAIR Surprises</h2>
 
         {data.topSurprises.length === 0 ? (
-          <p className="text-sm text-gray-600">No FAIR surprises detected (RAI aligned with winner).</p>
+          <p className="text-sm text-gray-600">
+            No FAIR surprises detected (PAI aligned with RAI).
+          </p>
         ) : (
           <ul className="space-y-3">
             {data.topSurprises.map((s, i) => (
@@ -34,9 +45,17 @@ export default async function NBAPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-semibold">{s.matchup}</div>
-                    <div className="text-sm text-gray-700 mt-1">RAI edge: {s.raiEdge}</div>
+
+                    <div className="text-sm text-gray-700 mt-1">
+                      RAI edge: <strong>{s.raiEdge}</strong>
+                    </div>
+
                     <div className="text-sm text-gray-700">
-                      Surprise score: <span className="font-medium">{s.score.toFixed(2)}</span>
+                      Surprise score:{" "}
+                      <span className="font-medium">
+                        {s.score >= 0 ? "+" : ""}
+                        {s.score.toFixed(2)}
+                      </span>
                       {" · "}
                       Logical outcome:{" "}
                       <span className="font-medium">
@@ -62,25 +81,33 @@ export default async function NBAPage() {
 
       {/* MATCH CARDS */}
       {data.matches.map((m, i) => (
-        <section key={i} className="mb-8 border-b pb-6">
+        <section key={i} className="mb-10 border-b pb-6">
           <h2 className="text-lg font-semibold">{m.matchup}</h2>
           <p className="text-sm mb-3">Final score: {m.finalScore}</p>
 
-          <h3 className="font-semibold">Pregame — Comparative Readiness (RAI)</h3>
+          {/* RAI */}
+          <h3 className="font-semibold">
+            Pregame — Comparative Readiness (RAI)
+          </h3>
           <p className="mb-2">
-            RAI edge: <strong>{m.rai.edge}</strong> (+{m.rai.value.toFixed(2)})
+            RAI edge: <strong>{m.rai.edge}</strong> (
+            {m.rai.value >= 0 ? "+" : ""}
+            {m.rai.value.toFixed(2)})
           </p>
 
           <ul className="list-disc ml-5 text-sm mb-4">
             {m.rai.levers.map((l, j) => (
               <li key={j}>
-                {l.label}: {l.value > 0 ? "+" : ""}
+                {l.label}: {l.value >= 0 ? "+" : ""}
                 {l.value.toFixed(2)}
               </li>
             ))}
           </ul>
 
-          <h3 className="font-semibold">Postgame — Comparative Execution (PAI)</h3>
+          {/* PAI */}
+          <h3 className="font-semibold">
+            Postgame — Comparative Execution (PAI)
+          </h3>
 
           {[m.pai.teamA, m.pai.teamB].map((t, k) => (
             <div key={k} className="mb-3">
@@ -88,7 +115,7 @@ export default async function NBAPage() {
               <ul className="list-disc ml-5 text-sm">
                 {t.levers.map((l, j) => (
                   <li key={j}>
-                    {l.label}: {l.value > 0 ? "+" : ""}
+                    {l.label}: {l.value >= 0 ? "+" : ""}
                     {l.value.toFixed(2)}
                   </li>
                 ))}
@@ -96,16 +123,22 @@ export default async function NBAPage() {
             </div>
           ))}
 
-          {/* SURPRISE TAG (dans la card) */}
-          {m.surprise.isSurprise ? (
+          {/* FAIR SURPRISE TAG */}
+          {m.surprise.isSurprise && (
             <div className="mt-3 border rounded-md p-3 bg-gray-50">
               <div className="font-semibold">FAIR Surprise</div>
+
               <div className="text-sm text-gray-700">
-                Winner: <span className="font-medium">{m.surprise.winner}</span> · RAI favored:{" "}
-                <span className="font-medium">{m.surprise.raiFavored}</span>
+                Winner: <strong>{m.surprise.winner}</strong> · RAI favored:{" "}
+                <strong>{m.surprise.raiFavored}</strong>
               </div>
+
               <div className="text-sm text-gray-700">
-                Surprise score: <span className="font-medium">{m.surprise.score.toFixed(2)}</span>{" "}
+                Surprise score:{" "}
+                <strong>
+                  {m.surprise.score >= 0 ? "+" : ""}
+                  {m.surprise.score.toFixed(2)}
+                </strong>
                 <span
                   className={`ml-2 inline-block px-2 py-0.5 text-xs font-semibold border rounded ${levelBadge(
                     m.surprise.level
@@ -115,10 +148,11 @@ export default async function NBAPage() {
                 </span>
               </div>
             </div>
-          ) : null}
+          )}
 
           <p className="text-xs italic mt-2">
-            Outcome interpreted through execution deltas relative to pregame structural expectations.
+            Outcome interpreted through execution deltas relative to pregame
+            structural expectations.
           </p>
         </section>
       ))}
