@@ -2,32 +2,27 @@ import { getNBAGames } from "@/lib/providers/espn";
 
 /* ================= CONSTANTS ================= */
 
-const NBA_SCORE_NORM = 12;
+const SCORE_NORM = 10;
+const MAX_RAI = 3;
 const MAX_PAI = 2.5;
 
 /* ================= TYPES ================= */
 
-export type FAIRLever = {
-  label: string;
-  value: number;
-};
+type Lever = { label: string; value: number };
 
-export type FAIRTeamPAI = {
-  name: string;
-  levers: FAIRLever[];
-};
+type TeamPAI = { name: string; levers: Lever[] };
 
-export type FAIRMatch = {
+type FAIRMatch = {
   matchup: string;
   finalScore: string;
   rai: {
     edge: string;
     value: number;
-    levers: FAIRLever[];
+    levers: Lever[];
   };
   pai: {
-    teamA: FAIRTeamPAI;
-    teamB: FAIRTeamPAI;
+    teamA: TeamPAI;
+    teamB: TeamPAI;
   };
 };
 
@@ -38,128 +33,77 @@ export type NBAAutoSnapshot = {
 
 /* ================= HELPERS ================= */
 
-function clamp(value: number, max = MAX_PAI) {
-  return Math.max(-max, Math.min(max, value));
-}
+const clamp = (v: number, max: number) =>
+  Math.max(-max, Math.min(max, v));
 
-function isFinal(event: any): boolean {
-  const competition = event?.competitions?.[0];
-  return (
-    competition?.status?.type?.state === "post" ||
-    competition?.status?.type?.completed === true
-  );
-}
+const isFinal = (e: any) =>
+  e?.competitions?.[0]?.status?.type?.state === "post";
 
 /* ================= CORE ================= */
 
 export async function computeNBAAutoSnapshot(): Promise<NBAAutoSnapshot> {
   const events = await getNBAGames();
 
-  const games = events.filter(
-    (e: any) =>
-      isFinal(e) &&
-      e.competitions?.[0]?.competitors?.length === 2
-  );
+  const matches: FAIRMatch[] = events
+    .filter(isFinal)
+    .map((event: any) => {
+      const comp = event.competitions[0];
+      const homeRaw = comp.competitors.find((c: any) => c.homeAway === "home");
+      const awayRaw = comp.competitors.find((c: any) => c.homeAway === "away");
 
-  const matches: FAIRMatch[] = games.map((event: any) => {
-    const competition = event.competitions[0];
+      const homeScore = Number(homeRaw.score);
+      const awayScore = Number(awayRaw.score);
+      const diff = homeScore - awayScore;
 
-    const homeRaw = competition.competitors.find(
-      (c: any) => c.homeAway === "home"
-    );
-    const awayRaw = competition.competitors.find(
-      (c: any) => c.homeAway === "away"
-    );
+      /* ---------- RAI ---------- */
 
-    const home = {
-      name: homeRaw.team.displayName,
-      score: Number(homeRaw.score),
-      recentForm: homeRaw.team?.records?.[0]?.summary?.includes("-")
-        ? 0.5
-        : 0,
-      defensiveTrend: 0,
-    };
+      const homeCourt = 0.6;
+      const form = clamp(diff / SCORE_NORM, 1.5);
+      const recordProxy = clamp(diff / 20, 1);
 
-    const away = {
-      name: awayRaw.team.displayName,
-      score: Number(awayRaw.score),
-      recentForm: awayRaw.team?.records?.[0]?.summary?.includes("-")
-        ? 0.5
-        : 0,
-      defensiveTrend: 0,
-    };
+      const raiRaw = homeCourt + form + recordProxy;
+      const raiValue = clamp(raiRaw, MAX_RAI);
 
-    const scoreDiff = home.score - away.score;
-    const norm = scoreDiff / NBA_SCORE_NORM;
+      /* ---------- PAI ---------- */
 
-    /* ---------- PAI ---------- */
+      const off = clamp(diff / SCORE_NORM, MAX_PAI);
+      const shot = clamp(diff / (SCORE_NORM * 1.4), MAX_PAI);
+      const def = clamp(diff / (SCORE_NORM * 1.2), MAX_PAI);
 
-    const offensive = clamp(norm * 1.0);
-    const shot = clamp(norm * 0.7);
-    const defense = clamp(norm * 0.9);
+      return {
+        matchup: `${homeRaw.team.displayName} vs ${awayRaw.team.displayName}`,
+        finalScore: `${homeScore} – ${awayScore}`,
 
-    /* ---------- RAI ---------- */
-
-    const raiValue = clamp(
-      (home.recentForm - away.recentForm) * 0.6 +
-        (home.defensiveTrend - away.defensiveTrend) * 0.4,
-      2
-    );
-
-    const raiEdge = raiValue >= 0 ? home.name : away.name;
-
-    return {
-      matchup: `${home.name} vs ${away.name}`,
-      finalScore: `${home.score} – ${away.score}`,
-
-      rai: {
-        edge: raiEdge,
-        value: Math.abs(Number(raiValue.toFixed(2))),
-        levers: [
-          {
-            label: "Recent form (last 5)",
-            value: Number(
-              ((home.recentForm - away.recentForm) * 0.6).toFixed(2)
-            ),
-          },
-          {
-            label: "Defensive rating trend",
-            value: Number(
-              ((home.defensiveTrend - away.defensiveTrend) * 0.4).toFixed(2)
-            ),
-          },
-        ],
-      },
-
-      pai: {
-        teamA: {
-          name: home.name,
+        rai: {
+          edge: raiValue >= 0 ? homeRaw.team.displayName : awayRaw.team.displayName,
+          value: Math.abs(Number(raiValue.toFixed(2))),
           levers: [
-            { label: "Offensive execution", value: Number(offensive.toFixed(2)) },
-            { label: "Shot conversion", value: Number(shot.toFixed(2)) },
-            { label: "Defensive resistance", value: Number(defense.toFixed(2)) },
+            { label: "Home-court context", value: Number(homeCourt.toFixed(2)) },
+            { label: "Recent scoring form", value: Number(form.toFixed(2)) },
+            { label: "Record proxy", value: Number(recordProxy.toFixed(2)) },
           ],
         },
-        teamB: {
-          name: away.name,
-          levers: [
-            {
-              label: "Offensive execution",
-              value: Number((-offensive).toFixed(2)),
-            },
-            {
-              label: "Shot conversion",
-              value: Number((-shot).toFixed(2)),
-            },
-            {
-              label: "Defensive resistance",
-              value: Number((-defense).toFixed(2)),
-            },
-          ],
+
+        pai: {
+          teamA: {
+            name: homeRaw.team.displayName,
+            levers: [
+              { label: "Offensive execution", value: Number(off.toFixed(2)) },
+              { label: "Shot conversion", value: Number(shot.toFixed(2)) },
+              { label: "Defensive resistance", value: Number(def.toFixed(2)) },
+            ],
+          },
+          teamB: {
+            name: awayRaw.team.displayName,
+            levers: [
+              { label: "Offensive execution", value: Number((-off).toFixed(2)) },
+              { label: "Shot conversion", value: Number((-shot).toFixed(2)) },
+              { label: "Defensive resistance", value: Number((-def).toFixed(2)) },
+            ],
+          },
         },
-      },
-    };
-  });
+      };
+    });
 
   return {
     updatedAt: new Date().toISOString(),
