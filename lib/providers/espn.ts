@@ -105,3 +105,28 @@ export async function getNFLGames(): Promise<NormalizedGame[]> {
   const json = await fetchScoreboard("football/nfl");
   return json.events.map(normalize).filter(Boolean);
 }
+/* ================= SOCCER ================= */
+
+export async function getSoccerGames(
+  league: string = "soccer/fra.1"
+): Promise<NormalizedGame[]> {
+  const all: NormalizedGame[] = [];
+
+  // On regarde jusqu'à 5 jours en arrière pour attraper les derniers matchs
+  for (let i = 0; i < 5; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+
+    const json = await fetchScoreboard(league, yyyymmdd(d));
+    const games = (json.events || [])
+      .map(normalize)
+      .filter(Boolean) as NormalizedGame[];
+
+    all.push(...games);
+
+    // Dès qu'on a des FINAL, on peut s'arrêter
+    if (games.some((g) => g.status === "FINAL")) break;
+  }
+
+  return all;
+}
