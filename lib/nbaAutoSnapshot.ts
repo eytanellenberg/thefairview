@@ -2,7 +2,7 @@ import { getNBAGames } from "@/lib/providers/espn";
 
 /* ================= CONSTANTS ================= */
 
-const NBA_SCORE_NORM = 12; // écart moyen NBA
+const NBA_SCORE_NORM = 12;
 const MAX_PAI = 2.5;
 
 /* ================= TYPES ================= */
@@ -42,29 +42,63 @@ function clamp(value: number, max = MAX_PAI) {
   return Math.max(-max, Math.min(max, value));
 }
 
+function isFinal(event: any): boolean {
+  const competition = event?.competitions?.[0];
+  return (
+    competition?.status?.type?.state === "post" ||
+    competition?.status?.type?.completed === true
+  );
+}
+
 /* ================= CORE ================= */
 
 export async function computeNBAAutoSnapshot(): Promise<NBAAutoSnapshot> {
   const events = await getNBAGames();
 
   const games = events.filter(
-    (g) => g.status === "FINAL" && g.home && g.away
+    (e: any) =>
+      isFinal(e) &&
+      e.competitions?.[0]?.competitors?.length === 2
   );
 
-  const matches: FAIRMatch[] = games.map((game) => {
-    const home = game.home;
-    const away = game.away;
+  const matches: FAIRMatch[] = games.map((event: any) => {
+    const competition = event.competitions[0];
+
+    const homeRaw = competition.competitors.find(
+      (c: any) => c.homeAway === "home"
+    );
+    const awayRaw = competition.competitors.find(
+      (c: any) => c.homeAway === "away"
+    );
+
+    const home = {
+      name: homeRaw.team.displayName,
+      score: Number(homeRaw.score),
+      recentForm: homeRaw.team?.records?.[0]?.summary?.includes("-")
+        ? 0.5
+        : 0,
+      defensiveTrend: 0,
+    };
+
+    const away = {
+      name: awayRaw.team.displayName,
+      score: Number(awayRaw.score),
+      recentForm: awayRaw.team?.records?.[0]?.summary?.includes("-")
+        ? 0.5
+        : 0,
+      defensiveTrend: 0,
+    };
 
     const scoreDiff = home.score - away.score;
     const norm = scoreDiff / NBA_SCORE_NORM;
 
-    /* ---------- PAI (POSTGAME EXECUTION) ---------- */
+    /* ---------- PAI ---------- */
 
     const offensive = clamp(norm * 1.0);
     const shot = clamp(norm * 0.7);
     const defense = clamp(norm * 0.9);
 
-    /* ---------- RAI (STRUCTURAL EDGE — LIGHT) ---------- */
+    /* ---------- RAI ---------- */
 
     const raiValue = clamp(
       (home.recentForm - away.recentForm) * 0.6 +
@@ -72,8 +106,7 @@ export async function computeNBAAutoSnapshot(): Promise<NBAAutoSnapshot> {
       2
     );
 
-    const raiEdge =
-      raiValue > 0 ? home.name : away.name;
+    const raiEdge = raiValue >= 0 ? home.name : away.name;
 
     return {
       matchup: `${home.name} vs ${away.name}`,
@@ -110,9 +143,18 @@ export async function computeNBAAutoSnapshot(): Promise<NBAAutoSnapshot> {
         teamB: {
           name: away.name,
           levers: [
-            { label: "Offensive execution", value: Number((-offensive).toFixed(2)) },
-            { label: "Shot conversion", value: Number((-shot).toFixed(2)) },
-            { label: "Defensive resistance", value: Number((-defense).toFixed(2)) },
+            {
+              label: "Offensive execution",
+              value: Number((-offensive).toFixed(2)),
+            },
+            {
+              label: "Shot conversion",
+              value: Number((-shot).toFixed(2)),
+            },
+            {
+              label: "Defensive resistance",
+              value: Number((-defense).toFixed(2)),
+            },
           ],
         },
       },
