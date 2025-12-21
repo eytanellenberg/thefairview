@@ -1,4 +1,4 @@
-/* ================= TYPES ================= */
+// lib/providers/espn.ts
 
 export type NormalizedTeam = {
   name: string;
@@ -15,18 +15,22 @@ export type NormalizedGame = {
   winner: "HOME" | "AWAY" | null;
 };
 
-/* ================= FETCH ================= */
+/* ================= ESPN ================= */
 
-async function fetchScoreboard(path: string) {
-  const res = await fetch(
-    `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`,
-    { cache: "no-store" }
+async function fetchScoreboard(path: string, date?: string) {
+  const url = new URL(
+    `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`
   );
+  if (date) url.searchParams.set("dates", date);
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) throw new Error("ESPN fetch failed");
   return res.json();
 }
 
-/* ================= NORMALIZATION ================= */
+function yyyymmdd(d: Date) {
+  return d.toISOString().slice(0, 10).replace(/-/g, "");
+}
 
 function parseStatus(ev: any): NormalizedGame["status"] {
   const t = ev?.competitions?.[0]?.status?.type;
@@ -36,12 +40,12 @@ function parseStatus(ev: any): NormalizedGame["status"] {
   return "UNKNOWN";
 }
 
-function normalizeEvent(ev: any): NormalizedGame | null {
+function normalize(ev: any): NormalizedGame | null {
   const comp = ev?.competitions?.[0];
   if (!comp) return null;
 
-  const home = comp.competitors?.find((c: any) => c.homeAway === "home");
-  const away = comp.competitors?.find((c: any) => c.homeAway === "away");
+  const home = comp.competitors.find((c: any) => c.homeAway === "home");
+  const away = comp.competitors.find((c: any) => c.homeAway === "away");
   if (!home || !away) return null;
 
   let winner: "HOME" | "AWAY" | null = null;
@@ -49,7 +53,7 @@ function normalizeEvent(ev: any): NormalizedGame | null {
   if (away.winner) winner = "AWAY";
 
   return {
-    id: String(ev.id),
+    id: ev.id,
     dateUtc: ev.date,
     status: parseStatus(ev),
     home: {
@@ -66,61 +70,32 @@ function normalizeEvent(ev: any): NormalizedGame | null {
   };
 }
 
-/* ================= LEAGUE EXPORTS ================= */
+/* ================= PUBLIC ================= */
 
 export async function getNBAGames(): Promise<NormalizedGame[]> {
-  const json = await fetchScoreboard("basketball/nba");
-  return json.events.map(normalizeEvent).filter(Boolean);
-}
+  const all: NormalizedGame[] = [];
 
-export async function getNFLGames(): Promise<NormalizedGame[]> {
-  const json = await fetchScoreboard("football/nfl");
-  return json.events.map(normalizeEvent).filter(Boolean);
-}
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const json = await fetchScoreboard("basketball/nba", yyyymmdd(d));
+    const games = (json.events || []).map(normalize).filter(Boolean);
+    all.push(...(games as NormalizedGame[]));
 
-export async function getSoccerGames(
-  league = "soccer/fra.1"
-): Promise<NormalizedGame[]> {
-  const json = await fetchScoreboard(league);
-  return json.events.map(normalizeEvent).filter(Boolean);
-}
-
-/* ================= BACKWARD COMPAT ================= */
-
-export async function getLastAndNextGame(leagueKey: string) {
-  let games: NormalizedGame[] = [];
-
-  if (leagueKey === "nba") games = await getNBAGames();
-  else if (leagueKey === "nfl") games = await getNFLGames();
-  else if (leagueKey.startsWith("soccer")) {
-    const [, lg] = leagueKey.split(":");
-    games = await getSoccerGames(lg || "soccer/fra.1");
+    if (all.some((g) => g.status === "FINAL")) break;
   }
 
-  const now = Date.now();
-  const sorted = [...games].sort(
-    (a, b) => new Date(a.dateUtc).getTime() - new Date(b.dateUtc).getTime()
-  );
-
-  const last =
-    [...sorted].reverse().find((g) => g.status === "FINAL") || null;
-
-  const next =
-    sorted.find(
-      (g) =>
-        new Date(g.dateUtc).getTime() > now && g.status !== "FINAL"
-    ) || null;
-
-  return { last, next };
+  return all;
 }
 
-export async function getLastSoccerGame(
-  league = "soccer/fra.1"
-): Promise<NormalizedGame | null> {
-  const games = await getSoccerGames(league);
-  const finals = games.filter((g) => g.status === "FINAL");
-  finals.sort(
-    (a, b) => new Date(b.dateUtc).getTime() - new Date(a.dateUtc).getTime()
-  );
-  return finals[0] || null;
-                 }
+export async function getLastAndNextGame() {
+  const games = await getNBAGames();
+  const finals = games
+    .filter((g) => g.status === "FINAL")
+    .sort((a, b) => new Date(b.dateUtc).getTime() - new Date(a.dateUtc).getTime());
+
+  return {
+    last: finals[0] ?? null,
+    next: null,
+  };
+}
