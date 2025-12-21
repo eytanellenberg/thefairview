@@ -1,33 +1,91 @@
-export type ESPNGame = {
+type ESPNTeam = {
   id: string;
-  status: {
-    type: {
-      name: string;
-    };
-  };
-  competitors: {
-    homeAway: "home" | "away";
-    team: { displayName: string };
-    score: string;
-  }[];
+  name: string;
+  abbreviation: string;
 };
 
-export async function getNBALastGames(): Promise<ESPNGame[]> {
-  const url =
-    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
+type ESPNCompetitor = {
+  homeAway: "home" | "away";
+  team: ESPNTeam;
+  score?: string;
+};
 
-  const res = await fetch(url, { cache: "no-store" });
-  const json = await res.json();
+type ESPNCompetition = {
+  competitors: ESPNCompetitor[];
+  status: {
+    type: {
+      completed: boolean;
+    };
+  };
+};
 
-  return (json.events || [])
-    .filter((e: any) => e.status?.type?.name === "STATUS_FINAL")
-    .map((e: any) => ({
-      id: e.id,
-      status: e.status,
-      competitors: e.competitions[0].competitors.map((c: any) => ({
-        homeAway: c.homeAway,
-        team: { displayName: c.team.displayName },
-        score: c.score,
-      })),
-    }));
+type ESPNEvent = {
+  id: string;
+  name: string;
+  competitions: ESPNCompetition[];
+  date: string;
+};
+
+/**
+ * Fetch last completed NBA games (scoreboard)
+ */
+export async function getNBAGames(): Promise<ESPNEvent[]> {
+  const res = await fetch(
+    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
+    { cache: "no-store" }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch NBA games from ESPN");
+  }
+
+  const data = await res.json();
+
+  return (data.events ?? []).filter(
+    (e: ESPNEvent) =>
+      e.competitions?.[0]?.status?.type?.completed === true
+  );
+}
+
+/**
+ * Fetch last completed NFL games
+ */
+export async function getNFLGames(): Promise<ESPNEvent[]> {
+  const res = await fetch(
+    "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+    { cache: "no-store" }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch NFL games from ESPN");
+  }
+
+  const data = await res.json();
+
+  return (data.events ?? []).filter(
+    (e: ESPNEvent) =>
+      e.competitions?.[0]?.status?.type?.completed === true
+  );
+}
+
+/**
+ * Fetch last completed soccer games (generic – league handled upstream)
+ * Example: Ligue 1 = league=fra.1
+ */
+export async function getSoccerGames(league: string): Promise<ESPNEvent[]> {
+  const res = await fetch(
+    `https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard`,
+    { cache: "no-store" }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch soccer games from ESPN");
+  }
+
+  const data = await res.json();
+
+  return (data.events ?? []).filter(
+    (e: ESPNEvent) =>
+      e.competitions?.[0]?.status?.type?.completed === true
+  );
 }
