@@ -3,10 +3,13 @@ import { computeNBAAutoSnapshot } from "@/lib/nbaAutoSnapshot";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function levelBadge(level: "MINOR" | "MODERATE" | "MAJOR") {
+function levelBadge(
+  level: "MINOR" | "MODERATE" | "MAJOR" | "NONE"
+) {
   if (level === "MAJOR") return "bg-red-100 text-red-800 border-red-200";
   if (level === "MODERATE") return "bg-orange-100 text-orange-800 border-orange-200";
-  return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  if (level === "MINOR") return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  return "bg-gray-100 text-gray-600 border-gray-200";
 }
 
 export default async function NBAPage() {
