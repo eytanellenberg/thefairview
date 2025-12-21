@@ -5,11 +5,6 @@ import { getNFLGames, NormalizedGame } from "@/lib/providers/espn";
 
 export type FAIRLever = { label: string; value: number };
 
-export type FAIRTeamPAI = {
-  name: string;
-  levers: FAIRLever[];
-};
-
 export type FAIRSurprise = {
   isSurprise: boolean;
   winner: string;
@@ -18,84 +13,89 @@ export type FAIRSurprise = {
   level: "MINOR" | "MODERATE" | "MAJOR" | "NONE";
 };
 
+export type FAIRTeamPAI = {
+  name: string;
+  levers: FAIRLever[];
+};
+
 export type FAIRMatch = {
   matchup: string;
   finalScore: string;
   dateUtc: string;
-
   rai: {
     edge: string;
     value: number;
     levers: FAIRLever[];
   };
-
   pai: {
     teamA: FAIRTeamPAI;
     teamB: FAIRTeamPAI;
   };
-
   surprise: FAIRSurprise;
+};
+
+export type WeeklyFAIRSummary = {
+  games: number;
+  noSurprise: number;
+  surprises: number;
+  alignmentRate: number;
+  takeaway: string;
 };
 
 export type NFLAutoSnapshot = {
   updatedAt: string;
   matches: FAIRMatch[];
-  topSurprises: {
-    matchup: string;
-    raiEdge: string;
-    score: number;
-    level: "MINOR" | "MODERATE" | "MAJOR";
-  }[];
+  topSurprises: FAIRSurprise[];
+  weeklySummary: WeeklyFAIRSummary;
 };
 
 /* ================= HELPERS ================= */
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+const r2 = (n: number) => Math.round(n * 100) / 100;
+const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
 
-function margin(g: NormalizedGame) {
-  if (g.home.score === null || g.away.score === null) return 0;
-  return g.home.score - g.away.score;
+function finalScore(g: NormalizedGame) {
+  if (g.home.score == null || g.away.score == null) return "—";
+  return `${g.home.score} – ${g.away.score}`;
 }
 
-function winnerName(g: NormalizedGame) {
-  if (!g.winner) return null;
-  return g.winner === "HOME" ? g.home.name : g.away.name;
-}
+/* ================= RAI ================= */
 
-/* ================= RAI — NFL ================= */
-
-function computeRAI_NFL(g: NormalizedGame) {
+function computeRAI(g: NormalizedGame) {
   const hs = g.home.score ?? 0;
   const as = g.away.score ?? 0;
 
-  const homeField = 1.0;
-  const scoringForm = clamp((hs - as) / 7, -3, 3);
-  const recordProxy = clamp((hs - as) / 14, -2, 2);
+  const homeField = 1;
+  const recentForm = clamp((hs - as) / 14, -2, 2);
+  const recordProxy = clamp((hs - as) / 28, -1, 1);
 
-  const raw = homeField + scoringForm + recordProxy;
+  const raw = homeField + recentForm + recordProxy;
   const edgeTeam = raw >= 0 ? g.home.name : g.away.name;
 
   return {
-    edge: edgeTeam,
-    value: round2(Math.abs(raw)),
+    edgeTeam,
+    value: r2(Math.abs(raw)),
     levers: [
-      { label: "Home-field advantage", value: round2(homeField * (raw >= 0 ? 1 : -1)) },
-      { label: "Recent scoring form", value: round2(scoringForm) },
-      { label: "Record proxy", value: round2(recordProxy) },
+      { label: "Home-field advantage", value: r2(homeField * (raw >= 0 ? 1 : -1)) },
+      { label: "Recent scoring form", value: r2(recentForm) },
+      { label: "Record proxy", value: r2(recordProxy) },
     ],
   };
 }
 
-/* ================= PAI — NFL ================= */
+/* ================= PAI ================= */
 
-function computePAI_NFL(g: NormalizedGame) {
-  const m = margin(g);
-  const scaled = clamp(m / 10, -3, 3);
+function computePAI(g: NormalizedGame) {
+  const margin =
+    g.home.score != null && g.away.score != null
+      ? g.home.score - g.away.score
+      : 0;
 
-  const off = round2(scaled * 1.0);
-  const eff = round2(scaled * 0.8);
-  const def = round2(scaled * 0.9);
+  const base = clamp(margin / 10, -3, 3);
+
+  const off = r2(base);
+  const eff = r2(base * 0.8);
+  const def = r2(base * 0.9);
 
   return {
     home: {
@@ -114,38 +114,52 @@ function computePAI_NFL(g: NormalizedGame) {
         { label: "Defensive resistance", value: -def },
       ],
     },
-    intensity: round2((Math.abs(off) + Math.abs(eff) + Math.abs(def)) / 3),
+    intensity: r2((Math.abs(off) + Math.abs(eff) + Math.abs(def)) / 3),
   };
 }
 
 /* ================= SURPRISE ================= */
 
-function surpriseLevel(score: number): "MINOR" | "MODERATE" | "MAJOR" {
-  if (score < 1) return "MINOR";
-  if (score < 2.5) return "MODERATE";
+function surpriseLevel(score: number) {
+  if (score < 0.75) return "MINOR";
+  if (score < 1.75) return "MODERATE";
   return "MAJOR";
 }
 
 function computeSurprise(
   g: NormalizedGame,
-  rai: ReturnType<typeof computeRAI_NFL>,
-  pai: ReturnType<typeof computePAI_NFL>
+  rai: ReturnType<typeof computeRAI>,
+  pai: ReturnType<typeof computePAI>
 ): FAIRSurprise {
-  const winner = winnerName(g);
-  if (!winner) {
-    return { isSurprise: false, winner: "—", raiFavored: rai.edge, score: 0, level: "NONE" };
+  if (!g.winner) {
+    return {
+      isSurprise: false,
+      winner: "—",
+      raiFavored: rai.edgeTeam,
+      score: 0,
+      level: "NONE",
+    };
   }
 
-  const isSurprise = winner !== rai.edge;
+  const winner = g.winner === "HOME" ? g.home.name : g.away.name;
+  const isSurprise = winner !== rai.edgeTeam;
+
   if (!isSurprise) {
-    return { isSurprise: false, winner, raiFavored: rai.edge, score: 0, level: "NONE" };
+    return {
+      isSurprise: false,
+      winner,
+      raiFavored: rai.edgeTeam,
+      score: 0,
+      level: "NONE",
+    };
   }
 
-  const score = round2(rai.value * pai.intensity);
+  const score = r2(rai.value * pai.intensity);
+
   return {
     isSurprise: true,
     winner,
-    raiFavored: rai.edge,
+    raiFavored: rai.edgeTeam,
     score,
     level: surpriseLevel(score),
   };
@@ -154,20 +168,18 @@ function computeSurprise(
 /* ================= MAIN ================= */
 
 export async function computeNFLAutoSnapshot(): Promise<NFLAutoSnapshot> {
-  const games = await getNFLGames();
-
-  const finals = games
+  const games = (await getNFLGames())
     .filter((g) => g.status === "FINAL")
     .sort((a, b) => new Date(b.dateUtc).getTime() - new Date(a.dateUtc).getTime());
 
-  const matches: FAIRMatch[] = finals.map((g) => {
-    const rai = computeRAI_NFL(g);
-    const pai = computePAI_NFL(g);
+  const matches: FAIRMatch[] = games.map((g) => {
+    const rai = computeRAI(g);
+    const pai = computePAI(g);
     const surprise = computeSurprise(g, rai, pai);
 
     return {
       matchup: `${g.home.name} vs ${g.away.name}`,
-      finalScore: `${g.home.score} – ${g.away.score}`,
+      finalScore: finalScore(g),
       dateUtc: g.dateUtc,
       rai,
       pai: { teamA: pai.home, teamB: pai.away },
@@ -175,20 +187,12 @@ export async function computeNFLAutoSnapshot(): Promise<NFLAutoSnapshot> {
     };
   });
 
-  const topSurprises = matches
-    .filter((m) => m.surprise.isSurprise)
-    .sort((a, b) => b.surprise.score - a.surprise.score)
-    .slice(0, 5)
-    .map((m) => ({
-      matchup: m.matchup,
-      raiEdge: `${m.rai.edge} (+${m.rai.value})`,
-      score: m.surprise.score,
-      level: m.surprise.level as "MINOR" | "MODERATE" | "MAJOR",
-    }));
+  const surprises = matches.filter((m) => m.surprise.isSurprise);
+  const noSurprise = matches.length - surprises.length;
+  const alignmentRate = matches.length
+    ? Math.round((noSurprise / matches.length) * 100)
+    : 0;
 
-  return {
-    updatedAt: new Date().toISOString(),
-    matches,
-    topSurprises,
-  };
-}
+  const takeaway =
+    alignmentRate >= 80
+      ? "This NFL slate was structur
