@@ -1,3 +1,4 @@
+import { computeFairSurprise } from "./fairSurprise";
 export type FAIRLever = {
   label: string;
   value: number;
