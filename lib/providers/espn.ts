@@ -15,7 +15,7 @@ export type NormalizedGame = {
   winner: "HOME" | "AWAY" | null;
 };
 
-/* ================= ESPN ================= */
+/* ================= ESPN CORE ================= */
 
 async function fetchScoreboard(path: string, date?: string) {
   const url = new URL(
@@ -70,7 +70,7 @@ function normalize(ev: any): NormalizedGame | null {
   };
 }
 
-/* ================= PUBLIC ================= */
+/* ================= NBA ================= */
 
 export async function getNBAGames(): Promise<NormalizedGame[]> {
   const all: NormalizedGame[] = [];
@@ -78,11 +78,14 @@ export async function getNBAGames(): Promise<NormalizedGame[]> {
   for (let i = 0; i < 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const json = await fetchScoreboard("basketball/nba", yyyymmdd(d));
-    const games = (json.events || []).map(normalize).filter(Boolean);
-    all.push(...(games as NormalizedGame[]));
 
-    if (all.some((g) => g.status === "FINAL")) break;
+    const json = await fetchScoreboard("basketball/nba", yyyymmdd(d));
+    const games = (json.events || [])
+      .map(normalize)
+      .filter(Boolean) as NormalizedGame[];
+
+    all.push(...games);
+    if (games.some((g) => g.status === "FINAL")) break;
   }
 
   return all;
@@ -99,12 +102,16 @@ export async function getLastAndNextGame() {
     next: null,
   };
 }
+
 /* ================= NFL ================= */
 
 export async function getNFLGames(): Promise<NormalizedGame[]> {
   const json = await fetchScoreboard("football/nfl");
-  return json.events.map(normalize).filter(Boolean);
+  return (json.events || [])
+    .map(normalize)
+    .filter(Boolean) as NormalizedGame[];
 }
+
 /* ================= SOCCER ================= */
 
 export async function getSoccerGames(
@@ -112,7 +119,7 @@ export async function getSoccerGames(
 ): Promise<NormalizedGame[]> {
   const all: NormalizedGame[] = [];
 
-  // On regarde jusqu'à 5 jours en arrière pour attraper les derniers matchs
+  // On remonte quelques jours pour attraper les derniers matchs FINAL
   for (let i = 0; i < 5; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -123,10 +130,8 @@ export async function getSoccerGames(
       .filter(Boolean) as NormalizedGame[];
 
     all.push(...games);
-
-    // Dès qu'on a des FINAL, on peut s'arrêter
     if (games.some((g) => g.status === "FINAL")) break;
   }
 
   return all;
-}
+           }
