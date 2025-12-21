@@ -1,177 +1,185 @@
-// lib/nbaLastGamesSnapshot.ts
+import { getNBAGames } from "@/lib/providers/espn";
 
-import { NBA_TEAMS } from "@/lib/data/nbaTeams";
-import { getLastAndNextGame } from "@/lib/providers/espn";
+/* ================= TYPES ================= */
 
-type Lever = { lever: string; value: number };
-
-type TeamSide = {
-  id: string;
-  name: string;
+type TeamGame = {
+  team: string;
+  pointsFor: number;
+  pointsAgainst: number;
 };
 
-type MatchCard = {
-  dateUtc: string;
-  home: TeamSide;
-  away: TeamSide;
-  finalScore: string; // "112 – 105" (home – away)
-
-  // Pregame (RAI) — proxy baseline (no next games)
+type Match = {
+  matchup: string;
+  finalScore: string;
   rai: {
-    edgeTeam: string;
-    edgeValue: number;
-    levers: Lever[];
+    edge: {
+      team: string;
+      value: number;
+    };
+    levers: { lever: string; value: number }[];
   };
-
-  // Postgame (PAI) — derived from final margin
   pai: {
-    home: { team: string; levers: Lever[] };
-    away: { team: string; levers: Lever[] };
+    teamA: PAIBlock;
+    teamB: PAIBlock;
   };
+};
+
+type PAIBlock = {
+  team: string;
+  score: string;
+  levers: { lever: string; value: number }[];
 };
 
 export type NBALastGamesSnapshot = {
   sport: "nba";
   updatedAt: string;
-  matches: MatchCard[];
+  matches: Match[];
 };
 
-function matchKey(dateUtc: string, aId: string, bId: string) {
-  return `${dateUtc}-${[aId, bId].sort().join("-")}`;
+/* ================= HELPERS ================= */
+
+function avg(nums: number[]): number {
+  if (!nums.length) return 0;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
-function safeNum(x: unknown): number | null {
-  if (typeof x === "number" && Number.isFinite(x)) return x;
-  if (typeof x === "string" && x.trim() !== "") {
-    const n = Number(x);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
+function round(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
-function formatScore(homeScore: number | null, awayScore: number | null): string {
-  if (homeScore === null || awayScore === null) return "—";
-  return `${homeScore} – ${awayScore}`;
-}
-
-// RAI proxy baseline (no future games, no leak from result)
-function computeRAIProxy(homeName: string): { edgeTeam: string; edgeValue: number; levers: Lever[] } {
-  // Minimal, stable, non-leaky baseline:
-  // - home-court context (small +)
-  // - tempo control (0)
-  // - shot quality creation (0)
-  const homeCourt = 0.4;
-
-  return {
-    edgeTeam: homeName,
-    edgeValue: homeCourt,
-    levers: [
-      { lever: "Home-court context", value: homeCourt },
-      { lever: "Tempo control", value: 0.0 },
-      { lever: "Shot quality creation", value: 0.0 },
-    ],
-  };
-}
-
-// PAI from margin (postgame only — allowed to use score)
-function computePAIFromMargin(
-  homeName: string,
-  awayName: string,
-  homeScore: number | null,
-  awayScore: number | null
-): {
-  home: { team: string; levers: Lever[] };
-  away: { team: string; levers: Lever[] };
-} {
-  if (homeScore === null || awayScore === null) {
-    return {
-      home: { team: homeName, levers: [{ lever: "Execution delta", value: 0 }] },
-      away: { team: awayName, levers: [{ lever: "Execution delta", value: 0 }] },
-    };
-  }
-
-  const margin = homeScore - awayScore; // home minus away
-  // Scale margin into small interpretable deltas
-  const s = Math.max(-3, Math.min(3, margin / 10)); // clamp [-3, +3]
-
-  // Home team levers
-  const homeLevers: Lever[] = [
-    { lever: "Offensive execution", value: s * 0.9 },
-    { lever: "Shot conversion", value: s * 0.6 },
-    { lever: "Defensive resistance", value: s * 0.7 },
-  ];
-
-  // Away team = symmetric opposite (execution deltas)
-  const awayLevers: Lever[] = [
-    { lever: "Offensive execution", value: -s * 0.9 },
-    { lever: "Shot conversion", value: -s * 0.6 },
-    { lever: "Defensive resistance", value: -s * 0.7 },
-  ];
-
-  return {
-    home: { team: homeName, levers: homeLevers },
-    away: { team: awayName, levers: awayLevers },
-  };
-}
+/* ================= CORE ================= */
 
 export async function computeNBALastGamesSnapshot(): Promise<NBALastGamesSnapshot> {
-  const byMatch: Record<string, any[]> = {};
+  const games = await getNBAGames({ status: "completed" });
 
-  for (const team of NBA_TEAMS) {
-    try {
-      const { last } = await getLastAndNextGame("nba", team.id);
-      if (!last) continue;
+  // 1. Build last games per team
+  const byTeam: Record<string, TeamGame[]> = {};
 
-      const dateUtc: string = last.dateUtc;
-      const homeId: string = last.home.id;
-      const awayId: string = last.away.id;
+  for (const g of games) {
+    const home = g.home;
+    const away = g.away;
 
-      const key = matchKey(dateUtc, homeId, awayId);
+    if (!home || !away) continue;
+    if (home.score == null || away.score == null) continue;
 
-      if (!byMatch[key]) byMatch[key] = [];
-      byMatch[key].push({ team, last });
-    } catch {
-      // skip team on provider error
-    }
-  }
+    byTeam[home.name] ??= [];
+    byTeam[away.name] ??= [];
 
-  const matches: MatchCard[] = [];
+    byTeam[home.name].push({
+      team: home.name,
+      pointsFor: home.score,
+      pointsAgainst: away.score,
+    });
 
-  for (const entries of Object.values(byMatch)) {
-    // We expect 2 entries (one per team) for a completed match
-    if (entries.length < 2) continue;
-
-    const last = entries[0].last;
-    const homeId: string = last.home.id;
-    const awayId: string = last.away.id;
-
-    const homeName: string = last.home.name;
-    const awayName: string = last.away.name;
-
-    const homeScore = safeNum(last.home.score);
-    const awayScore = safeNum(last.away.score);
-
-    const finalScore = formatScore(homeScore, awayScore);
-
-    const rai = computeRAIProxy(homeName);
-    const pai = computePAIFromMargin(homeName, awayName, homeScore, awayScore);
-
-    matches.push({
-      dateUtc: last.dateUtc,
-      home: { id: homeId, name: homeName },
-      away: { id: awayId, name: awayName },
-      finalScore,
-      rai,
-      pai,
+    byTeam[away.name].push({
+      team: away.name,
+      pointsFor: away.score,
+      pointsAgainst: home.score,
     });
   }
 
-  // Sort newest first
-  matches.sort((a, b) => (a.dateUtc < b.dateUtc ? 1 : a.dateUtc > b.dateUtc ? -1 : 0));
+  // 2. Keep last 5 games per team
+  for (const t in byTeam) {
+    byTeam[t] = byTeam[t].slice(-5);
+  }
+
+  // 3. Build matches (unique games)
+  const matches: Match[] = [];
+
+  for (const g of games) {
+    const home = g.home;
+    const away = g.away;
+    if (!home || !away) continue;
+    if (home.score == null || away.score == null) continue;
+
+    const teamA = home.name;
+    const teamB = away.name;
+
+    const recentA = byTeam[teamA] ?? [];
+    const recentB = byTeam[teamB] ?? [];
+
+    if (!recentA.length || !recentB.length) continue;
+
+    const diffA = avg(
+      recentA.map((m) => m.pointsFor - m.pointsAgainst)
+    );
+    const diffB = avg(
+      recentB.map((m) => m.pointsFor - m.pointsAgainst)
+    );
+
+    const deltaRAI = round(diffA - diffB);
+
+    const raiEdgeTeam = deltaRAI >= 0 ? teamA : teamB;
+
+    // PAI from last match margin
+    const margin = home.score - away.score;
+
+    const paiA = round(margin / 10);
+    const paiB = round(-margin / 10);
+
+    matches.push({
+      matchup: `${teamA} vs ${teamB}`,
+      finalScore: `${home.score} – ${away.score}`,
+      rai: {
+        edge: {
+          team: raiEdgeTeam,
+          value: Math.abs(deltaRAI),
+        },
+        levers: [
+          {
+            lever: "Recent point differential (last 5)",
+            value: round(diffA),
+          },
+          {
+            lever: "Opponent recent differential",
+            value: round(-diffB),
+          },
+        ],
+      },
+      pai: {
+        teamA: {
+          team: teamA,
+          score: `${home.score} – ${away.score}`,
+          levers: [
+            {
+              lever: "Offensive execution",
+              value: paiA,
+            },
+            {
+              lever: "Shot conversion",
+              value: round(paiA * 0.7),
+            },
+            {
+              lever: "Defensive resistance",
+              value: round(paiA * 0.8),
+            },
+          ],
+        },
+        teamB: {
+          team: teamB,
+          score: `${home.score} – ${away.score}`,
+          levers: [
+            {
+              lever: "Offensive execution",
+              value: paiB,
+            },
+            {
+              lever: "Shot conversion",
+              value: round(paiB * 0.7),
+            },
+            {
+              lever: "Defensive resistance",
+              value: round(paiB * 0.8),
+            },
+          ],
+        },
+      },
+    });
+  }
 
   return {
     sport: "nba",
     updatedAt: new Date().toISOString(),
     matches,
   };
-}
+          }
