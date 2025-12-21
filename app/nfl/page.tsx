@@ -4,7 +4,7 @@ import { computeNFLAutoSnapshot } from "@/lib/nflAutoSnapshot";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function levelBadge(level: "MINOR" | "MODERATE" | "MAJOR") {
+function badge(level: "MINOR" | "MODERATE" | "MAJOR") {
   if (level === "MAJOR") return "bg-red-100 text-red-800 border-red-200";
   if (level === "MODERATE") return "bg-orange-100 text-orange-800 border-orange-200";
   return "bg-yellow-100 text-yellow-800 border-yellow-200";
@@ -25,38 +25,34 @@ export default async function NFLPage() {
         {data.matches.length}
       </p>
 
-      {/* TOP SURPRISES */}
+      {/* WEEKLY BOX */}
       <section className="mb-8 border rounded-lg p-4 bg-gray-50">
-        <h2 className="text-lg font-semibold mb-3">🔥 Top FAIR Surprises</h2>
+        <h2 className="text-lg font-semibold mb-2">Weekly FAIR Summary</h2>
 
-        {data.topSurprises.length === 0 ? (
-          <p className="text-sm text-gray-600">
-            No FAIR surprises detected this week.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {data.topSurprises.map((s, i) => (
-              <li key={i} className="border rounded-md bg-white p-3 flex justify-between">
-                <div>
-                  <div className="font-semibold">{s.matchup}</div>
-                  <div className="text-sm text-gray-700">
-                    RAI edge: {s.raiEdge}
-                  </div>
-                  <div className="text-sm text-gray-700">
-                    Surprise score: {s.score.toFixed(2)}
-                  </div>
-                </div>
-                <span
-                  className={`px-2 py-1 text-xs font-semibold border rounded ${levelBadge(
-                    s.level
-                  )}`}
-                >
-                  {s.level}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div>
+            <div className="text-gray-500">Games analyzed</div>
+            <div className="font-semibold">{data.weeklySummary.games}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">No-surprise games</div>
+            <div className="font-semibold">{data.weeklySummary.noSurprise}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">Alignment rate</div>
+            <div className="font-semibold">
+              {data.weeklySummary.alignmentRate}%
+            </div>
+          </div>
+          <div>
+            <div className="text-gray-500">Upsets</div>
+            <div className="font-semibold">{data.weeklySummary.surprises}</div>
+          </div>
+        </div>
+
+        <p className="mt-3 text-sm italic text-gray-700">
+          {data.weeklySummary.takeaway}
+        </p>
       </section>
 
       {/* MATCHES */}
@@ -95,18 +91,18 @@ export default async function NFLPage() {
             </div>
           ))}
 
-          {m.surprise.isSurprise && (
+          {m.surprise.isSurprise && m.surprise.level !== "NONE" && (
             <div className="mt-3 border rounded-md p-3 bg-gray-50">
               <div className="font-semibold">FAIR Surprise</div>
               <div className="text-sm">
                 Winner: <strong>{m.surprise.winner}</strong> · RAI favored:{" "}
                 <strong>{m.surprise.raiFavored}</strong>
               </div>
-              <div className="text-sm">
-                Surprise score: <strong>{m.surprise.score}</strong>{" "}
+              <div className="text-sm mt-1">
+                Surprise score: <strong>{m.surprise.score}</strong>
                 <span
-                  className={`ml-2 inline-block px-2 py-0.5 text-xs font-semibold border rounded ${levelBadge(
-                    m.surprise.level as "MINOR" | "MODERATE" | "MAJOR"
+                  className={`ml-2 inline-block px-2 py-0.5 text-xs font-semibold border rounded ${badge(
+                    m.surprise.level
                   )}`}
                 >
                   {m.surprise.level}
@@ -122,4 +118,4 @@ export default async function NFLPage() {
       </footer>
     </main>
   );
-}
+            }
