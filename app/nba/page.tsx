@@ -3,8 +3,8 @@ import { computeNBAAutoSnapshot } from "@/lib/nbaAutoSnapshot";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function NBAPage() {
-  const data = computeNBAAutoSnapshot();
+export default async function NBAPage() {
+  const data = await computeNBAAutoSnapshot();
 
   return (
     <main className="max-w-4xl mx-auto p-6 bg-white text-gray-900">
@@ -23,21 +23,29 @@ export default function NBAPage() {
           <h2 className="text-lg font-semibold">{m.matchup}</h2>
           <p className="text-sm mb-3">Final score: {m.finalScore}</p>
 
-          <h3 className="font-semibold">Pregame — Comparative Readiness (RAI)</h3>
+          {/* ================= RAI ================= */}
+          <h3 className="font-semibold mt-3">
+            Pregame — Comparative Readiness (RAI)
+          </h3>
           <p className="mb-2">
-            RAI edge: <strong>{m.rai.edge}</strong> (+{m.rai.value})
+            RAI edge: <strong>{m.rai.edge}</strong>{" "}
+            ({m.rai.value >= 0 ? "+" : ""}
+            {m.rai.value.toFixed(2)})
           </p>
 
           <ul className="list-disc ml-5 text-sm mb-4">
             {m.rai.levers.map((l, j) => (
               <li key={j}>
-                {l.label}: {l.value > 0 ? "+" : ""}
+                {l.label}: {l.value >= 0 ? "+" : ""}
                 {l.value.toFixed(2)}
               </li>
             ))}
           </ul>
 
-          <h3 className="font-semibold">Postgame — Comparative Execution (PAI)</h3>
+          {/* ================= PAI ================= */}
+          <h3 className="font-semibold mt-3">
+            Postgame — Comparative Execution (PAI)
+          </h3>
 
           {[m.pai.teamA, m.pai.teamB].map((t, k) => (
             <div key={k} className="mb-3">
@@ -45,7 +53,7 @@ export default function NBAPage() {
               <ul className="list-disc ml-5 text-sm">
                 {t.levers.map((l, j) => (
                   <li key={j}>
-                    {l.label}: {l.value > 0 ? "+" : ""}
+                    {l.label}: {l.value >= 0 ? "+" : ""}
                     {l.value.toFixed(2)}
                   </li>
                 ))}
@@ -54,7 +62,8 @@ export default function NBAPage() {
           ))}
 
           <p className="text-xs italic mt-2">
-            Outcome interpreted through execution deltas relative to pregame structural expectations.
+            Outcome interpreted through execution deltas relative to pregame
+            structural expectations.
           </p>
         </section>
       ))}
