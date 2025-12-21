@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { buildNBASnapshot } from "@/lib/nbaSnapshot";
-
-export const revalidate = 6 * 60 * 60; // 6h
+import { computeNBAAutoSnapshot } from "@/lib/nbaAutoSnapshot";
 
 export async function GET() {
-  const data = await buildNBASnapshot();
+  const data = computeNBAAutoSnapshot();
   return NextResponse.json(data);
 }
