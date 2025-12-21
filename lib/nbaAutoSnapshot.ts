@@ -1,112 +1,145 @@
-import { getNBAGames } from "@/lib/providers/espn";
-
-/* ================= CONSTANTS ================= */
-
-const SCORE_NORM = 10;
-const MAX_RAI = 3;
-const MAX_PAI = 2.5;
-
-/* ================= TYPES ================= */
-
-type Lever = { label: string; value: number };
-
-type TeamPAI = { name: string; levers: Lever[] };
-
-type FAIRMatch = {
-  matchup: string;
-  finalScore: string;
-  rai: {
-    edge: string;
-    value: number;
-    levers: Lever[];
-  };
-  pai: {
-    teamA: TeamPAI;
-    teamB: TeamPAI;
-  };
+export type FAIRLever = {
+  label: string;
+  value: number;
 };
 
-export type NBAAutoSnapshot = {
+export type FAIRRAI = {
+  edge: string;
+  value: number;
+  levers: FAIRLever[];
+};
+
+export type FAIRPAITeam = {
+  name: string;
+  levers: FAIRLever[];
+};
+
+export type FAIRSurprise = {
+  value: number;
+  label: "Major Upset" | "Minor Upset" | "Logical Outcome" | "Structural Miss";
+  color: "green" | "orange" | "gray" | "red";
+};
+
+export type FAIRMatch = {
+  matchup: string;
+  finalScore: string;
+  rai: FAIRRAI;
+  pai: {
+    teamA: FAIRPAITeam;
+    teamB: FAIRPAITeam;
+  };
+  fairSurprise: FAIRSurprise;
+};
+
+export type NBASnapshot = {
+  sport: "nba";
   updatedAt: string;
   matches: FAIRMatch[];
 };
 
 /* ================= HELPERS ================= */
 
-const clamp = (v: number, max: number) =>
-  Math.max(-max, Math.min(max, v));
+function scale(value: number, max = 3) {
+  return Number(Math.max(-max, Math.min(max, value)).toFixed(2));
+}
 
-const isFinal = (e: any) =>
-  e?.competitions?.[0]?.status?.type?.state === "post";
+function computeFAIRSurprise(
+  raiEdge: number,
+  paiNet: number
+): FAIRSurprise {
+  const value = Number((paiNet - raiEdge).toFixed(2));
 
-/* ================= CORE ================= */
+  if (value >= 2)
+    return { value, label: "Major Upset", color: "green" };
+  if (value >= 1)
+    return { value, label: "Minor Upset", color: "orange" };
+  if (value <= -1.5)
+    return { value, label: "Structural Miss", color: "red" };
 
-export async function computeNBAAutoSnapshot(): Promise<NBAAutoSnapshot> {
-  const events = await getNBAGames();
+  return { value, label: "Logical Outcome", color: "gray" };
+}
 
-  const matches: FAIRMatch[] = events
-    .filter(isFinal)
-    .map((event: any) => {
-      const comp = event.competitions[0];
-      const homeRaw = comp.competitors.find((c: any) => c.homeAway === "home");
-      const awayRaw = comp.competitors.find((c: any) => c.homeAway === "away");
+/* ================= MAIN ================= */
 
-      const homeScore = Number(homeRaw.score);
-      const awayScore = Number(awayRaw.score);
-      const diff = homeScore - awayScore;
+export function computeNBAAutoSnapshot(): NBASnapshot {
+  const rawGames = [
+    {
+      home: "Denver Nuggets",
+      away: "Houston Rockets",
+      homeScore: 101,
+      awayScore: 115,
+      homeForm: -1.4,
+      awayForm: 1.4,
+      homeRecord: -0.7,
+      awayRecord: 0.7,
+    },
+    {
+      home: "LA Clippers",
+      away: "Los Angeles Lakers",
+      homeScore: 103,
+      awayScore: 88,
+      homeForm: 1.5,
+      awayForm: -1.5,
+      homeRecord: 0.75,
+      awayRecord: -0.75,
+    },
+    // ➜ tu peux en ajouter autant que tu veux
+  ];
 
-      /* ---------- RAI ---------- */
+  const matches: FAIRMatch[] = rawGames.map((g) => {
+    const raiValue = scale(0.6 + g.homeForm + g.homeRecord);
 
-      const homeCourt = 0.6;
-      const form = clamp(diff / SCORE_NORM, 1.5);
-      const recordProxy = clamp(diff / 20, 1);
+    const rai: FAIRRAI = {
+      edge: raiValue >= 0 ? g.home : g.away,
+      value: Math.abs(raiValue),
+      levers: [
+        { label: "Home-court context", value: 0.6 },
+        { label: "Recent scoring form", value: g.homeForm },
+        { label: "Record proxy", value: g.homeRecord },
+      ],
+    };
 
-      const raiRaw = homeCourt + form + recordProxy;
-      const raiValue = clamp(raiRaw, MAX_RAI);
+    const margin = g.homeScore - g.awayScore;
+    const paiHome = scale(margin / 8);
+    const paiAway = scale(-margin / 8);
 
-      /* ---------- PAI ---------- */
+    const paiWinner =
+      g.homeScore > g.awayScore ? paiHome : paiAway;
 
-      const off = clamp(diff / SCORE_NORM, MAX_PAI);
-      const shot = clamp(diff / (SCORE_NORM * 1.4), MAX_PAI);
-      const def = clamp(diff / (SCORE_NORM * 1.2), MAX_PAI);
+    const fairSurprise = computeFAIRSurprise(
+      Math.abs(raiValue),
+      paiWinner
+    );
 
-      return {
-        matchup: `${homeRaw.team.displayName} vs ${awayRaw.team.displayName}`,
-        finalScore: `${homeScore} – ${awayScore}`,
-
-        rai: {
-          edge: raiValue >= 0 ? homeRaw.team.displayName : awayRaw.team.displayName,
-          value: Math.abs(Number(raiValue.toFixed(2))),
+    return {
+      matchup: `${g.home} vs ${g.away}`,
+      finalScore: `${g.homeScore} – ${g.awayScore}`,
+      rai,
+      pai: {
+        teamA: {
+          name: g.home,
           levers: [
-            { label: "Home-court context", value: Number(homeCourt.toFixed(2)) },
-            { label: "Recent scoring form", value: Number(form.toFixed(2)) },
-            { label: "Record proxy", value: Number(recordProxy.toFixed(2)) },
+            { label: "Offensive execution", value: paiHome },
+            { label: "Shot conversion", value: scale(paiHome * 0.7) },
+            { label: "Defensive resistance", value: scale(paiHome * 0.8) },
           ],
         },
-
-        pai: {
-          teamA: {
-            name: homeRaw.team.displayName,
-            levers: [
-              { label: "Offensive execution", value: Number(off.toFixed(2)) },
-              { label: "Shot conversion", value: Number(shot.toFixed(2)) },
-              { label: "Defensive resistance", value: Number(def.toFixed(2)) },
-            ],
-          },
-          teamB: {
-            name: awayRaw.team.displayName,
-            levers: [
-              { label: "Offensive execution", value: Number((-off).toFixed(2)) },
-              { label: "Shot conversion", value: Number((-shot).toFixed(2)) },
-              { label: "Defensive resistance", value: Number((-def).toFixed(2)) },
-            ],
-          },
+        teamB: {
+          name: g.away,
+          levers: [
+            { label: "Offensive execution", value: paiAway },
+            { label: "Shot conversion", value: scale(paiAway * 0.7) },
+            { label: "Defensive resistance", value: scale(paiAway * 0.8) },
+          ],
         },
-      };
-    });
+      },
+      fairSurprise,
+    };
+  });
 
   return {
+    sport: "nba",
     updatedAt: new Date().toISOString(),
     matches,
   };
-}
+      }
