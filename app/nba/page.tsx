@@ -21,7 +21,7 @@ export default async function NBAPage() {
         {data.matches.length}
       </p>
 
-      {/* 🔥 TOP SURPRISES */}
+      {/* TOP SURPRISES */}
       <section className="mb-8 border rounded-lg p-4 bg-gray-50">
         <h2 className="text-lg font-semibold mb-3">🔥 Top FAIR Surprises</h2>
 
@@ -37,13 +37,20 @@ export default async function NBAPage() {
                     <div className="text-sm">RAI edge: {s.raiEdge}</div>
                     <div className="text-sm">
                       Logical outcome:{" "}
-                      <span className="font-medium">
+                      <strong>
                         {s.logicalOutcome >= 0 ? "+" : ""}
                         {s.logicalOutcome.toFixed(2)}
-                      </span>
+                      </strong>
+                    </div>
+                    <div className="text-sm">
+                      Surprise score: <strong>{s.score.toFixed(2)}</strong>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-semibold border rounded ${levelBadge(s.level)}`}>
+                  <span
+                    className={`px-2 py-1 h-fit text-xs font-semibold border rounded ${levelBadge(
+                      s.level
+                    )}`}
+                  >
                     {s.level}
                   </span>
                 </div>
@@ -59,21 +66,21 @@ export default async function NBAPage() {
           <h2 className="text-lg font-semibold">{m.matchup}</h2>
           <p className="text-sm mb-3">Final score: {m.finalScore}</p>
 
-          <h3 className="font-semibold">Pregame — RAI</h3>
+          <h3 className="font-semibold">Pregame — Comparative Readiness (RAI)</h3>
           <p className="mb-2">
-            RAI edge: <strong>{m.rai.edge}</strong> (+{m.rai.value})
+            RAI edge: <strong>{m.rai.edge}</strong> (+{m.rai.value.toFixed(2)})
           </p>
 
           <ul className="list-disc ml-5 text-sm mb-4">
             {m.rai.levers.map((l, j) => (
               <li key={j}>
                 {l.label}: {l.value > 0 ? "+" : ""}
-                {l.value}
+                {l.value.toFixed(2)}
               </li>
             ))}
           </ul>
 
-          <h3 className="font-semibold">Postgame — PAI</h3>
+          <h3 className="font-semibold">Postgame — Comparative Execution (PAI)</h3>
 
           {[m.pai.teamA, m.pai.teamB].map((t, k) => (
             <div key={k} className="mb-3">
@@ -82,7 +89,7 @@ export default async function NBAPage() {
                 {t.levers.map((l, j) => (
                   <li key={j}>
                     {l.label}: {l.value > 0 ? "+" : ""}
-                    {l.value}
+                    {l.value.toFixed(2)}
                   </li>
                 ))}
               </ul>
@@ -93,16 +100,18 @@ export default async function NBAPage() {
             <div className="mt-3 border rounded-md p-3 bg-gray-50">
               <div className="font-semibold">FAIR Surprise</div>
               <div className="text-sm">
-                Winner: {m.surprise.winner} · RAI favored: {m.surprise.raiFavored}
+                Winner: <strong>{m.surprise.winner}</strong> · RAI favored:{" "}
+                <strong>{m.surprise.raiFavored}</strong>
               </div>
               <div className="text-sm">
-                Surprise score: {m.surprise.score.toFixed(2)}{" "}
-                <span className={`ml-2 px-2 py-0.5 text-xs border rounded ${levelBadge(m.surprise.level as any)}`}>
-                  {m.surprise.level}
-                </span>
+                Surprise score: <strong>{m.surprise.score.toFixed(2)}</strong>
               </div>
             </div>
           )}
+
+          <p className="text-xs italic mt-2">
+            Outcome interpreted through execution deltas relative to pregame structural expectations.
+          </p>
         </section>
       ))}
 
@@ -111,4 +120,4 @@ export default async function NBAPage() {
       </footer>
     </main>
   );
-            }
+}
