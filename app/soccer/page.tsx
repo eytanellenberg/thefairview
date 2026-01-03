@@ -18,7 +18,9 @@ export default async function SoccerEuropePage() {
     <main className="max-w-5xl mx-auto p-6 bg-white text-gray-900">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold mb-1">European Soccer — FAIR Weekly</h1>
+          <h1 className="text-2xl font-semibold mb-1">
+            European Soccer — FAIR Weekly
+          </h1>
           <p className="text-sm text-gray-600">
             Updated at {new Date(data.updatedAt).toLocaleString()}
           </p>
@@ -34,42 +36,74 @@ export default async function SoccerEuropePage() {
 
       {/* WEEKLY SUMMARY */}
       <section className="mt-6 border rounded-lg p-4 bg-gray-50">
-        <h2 className="text-lg font-semibold mb-3">Weekly FAIR Summary (Europe)</h2>
+        <h2 className="text-lg font-semibold mb-3">
+          Weekly FAIR Summary (Europe)
+        </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="border rounded-md bg-white p-3">
             <div className="text-xs text-gray-500">Games analyzed</div>
-            <div className="text-xl font-semibold">{data.weeklySummary.games}</div>
+            <div className="text-xl font-semibold">
+              {data.weeklySummary.games}
+            </div>
           </div>
 
           <div className="border rounded-md bg-white p-3">
             <div className="text-xs text-gray-500">No-surprise games</div>
-            <div className="text-xl font-semibold">{data.weeklySummary.noSurprise}</div>
+            <div className="text-xl font-semibold">
+              {data.weeklySummary.noSurprise}
+            </div>
           </div>
 
           <div className="border rounded-md bg-white p-3">
             <div className="text-xs text-gray-500">Alignment rate</div>
-            <div className="text-xl font-semibold">{data.weeklySummary.alignmentRate}%</div>
+            <div className="text-xl font-semibold">
+              {data.weeklySummary.alignmentRate}%
+            </div>
           </div>
 
           <div className="border rounded-md bg-white p-3">
             <div className="text-xs text-gray-500">Upsets</div>
-            <div className="text-xl font-semibold">{data.weeklySummary.surprises}</div>
+            <div className="text-xl font-semibold">
+              {data.weeklySummary.surprises}
+            </div>
           </div>
         </div>
 
         <p className="text-sm text-gray-700 mt-3">
-          <span className="font-semibold">FAIR Takeaway:</span> {data.weeklySummary.takeaway}
+          <span className="font-semibold">FAIR Takeaway:</span>{" "}
+          {data.weeklySummary.takeaway}
         </p>
 
         <div className="text-xs text-gray-500 mt-2">
-          Leagues included: {data.leaguesIncluded.map((l) => l.label).join(", ")}
+          Leagues included:{" "}
+          {data.leaguesIncluded.map((l) => l.label).join(", ")}
         </div>
+      </section>
+
+      {/* MATCHES ANALYZED */}
+      <section className="mt-6 border rounded-lg p-4 bg-white">
+        <h2 className="text-lg font-semibold mb-3">
+          Matches analyzed
+        </h2>
+
+        <ul className="list-disc ml-6 text-sm text-gray-700">
+          {data.analyzedFixtures.map((m, i) => (
+            <li key={i}>
+              {m.home} vs {m.away}{" "}
+              <span className="text-gray-500">
+                ({m.leagueLabel})
+              </span>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* TOP SURPRISES */}
       <section className="mt-6 border rounded-lg p-4 bg-white">
-        <h2 className="text-lg font-semibold mb-3">🔥 Top FAIR Surprises (Europe)</h2>
+        <h2 className="text-lg font-semibold mb-3">
+          🔥 Top FAIR Surprises (Europe)
+        </h2>
 
         {data.topSurprises.length === 0 ? (
           <p className="text-sm text-gray-600">
@@ -83,15 +117,20 @@ export default async function SoccerEuropePage() {
                   <div>
                     <div className="font-semibold">{s.matchup}</div>
                     <div className="text-sm text-gray-700">
-                      League: <span className="font-medium">{s.leagueLabel}</span>
+                      League:{" "}
+                      <span className="font-medium">{s.leagueLabel}</span>
                     </div>
                     <div className="text-sm text-gray-700 mt-1">
-                      Winner: <span className="font-medium">{s.winner}</span> · RAI favored:{" "}
+                      Winner:{" "}
+                      <span className="font-medium">{s.winner}</span> ·
+                      RAI favored:{" "}
                       <span className="font-medium">{s.raiFavored}</span>
                     </div>
                     <div className="text-sm text-gray-700">
                       Surprise score:{" "}
-                      <span className="font-medium">{s.score.toFixed(2)}</span>
+                      <span className="font-medium">
+                        {s.score.toFixed(2)}
+                      </span>
                     </div>
                   </div>
 
@@ -109,7 +148,7 @@ export default async function SoccerEuropePage() {
         )}
       </section>
 
-      {/* OPTIONAL: Links to league pages (tu peux enlever si tu veux) */}
+      {/* LEAGUE PAGES */}
       <section className="mt-6 text-sm text-gray-700">
         <div className="font-semibold mb-2">League pages</div>
         <div className="flex flex-wrap gap-2">
