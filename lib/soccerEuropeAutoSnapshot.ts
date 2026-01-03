@@ -21,6 +21,12 @@ export type WeeklyFAIRSummary = {
   takeaway: string;
 };
 
+export type AnalyzedFixture = {
+  leagueLabel: string;
+  home: string;
+  away: string;
+};
+
 export type SoccerEuropeSnapshot = {
   updatedAt: string;
   leaguesIncluded: { key: string; label: string; slug: string }[];
@@ -34,6 +40,7 @@ export type SoccerEuropeSnapshot = {
     score: number;
     level: "MINOR" | "MODERATE" | "MAJOR";
   }[];
+  analyzedFixtures: AnalyzedFixture[]; // 👈 NOUVEAU
 };
 
 /* ================= CONFIG ================= */
@@ -55,7 +62,6 @@ function computeRAI(g: NormalizedGame) {
   const hs = g.home.score ?? 0;
   const as = g.away.score ?? 0;
 
-  // Soccer: home advantage smaller than NBA/NFL
   const homeAdv = 0.35;
   const scoringForm = clamp((hs - as) / 2.5, -1.75, 1.75);
   const recordProxy = clamp((hs - as) / 4.5, -1.0, 1.0);
@@ -76,9 +82,10 @@ function computeRAI(g: NormalizedGame) {
 
 function computePAI(g: NormalizedGame) {
   const margin =
-    g.home.score != null && g.away.score != null ? g.home.score - g.away.score : 0;
+    g.home.score != null && g.away.score != null
+      ? g.home.score - g.away.score
+      : 0;
 
-  // Soccer is lower scoring → stronger scaling
   const base = clamp(margin / 1.5, -3, 3);
 
   const off = r2(base * 1.0);
@@ -96,7 +103,12 @@ function surpriseLevel(score: number): "MINOR" | "MODERATE" | "MAJOR" {
   return "MAJOR";
 }
 
-function computeSurprise(g: NormalizedGame, raiValue: number, raiFavored: string, paiIntensity: number): FAIRSurprise {
+function computeSurprise(
+  g: NormalizedGame,
+  raiValue: number,
+  raiFavored: string,
+  paiIntensity: number
+): FAIRSurprise {
   if (!g.winner) {
     return { isSurprise: false, winner: "—", raiFavored, score: 0, level: "NONE" };
   }
@@ -113,15 +125,16 @@ function computeSurprise(g: NormalizedGame, raiValue: number, raiFavored: string
 }
 
 function takeAway(alignmentRate: number) {
-  if (alignmentRate >= 80) return "European football was structurally stable this week: most outcomes followed pregame readiness (RAI).";
-  if (alignmentRate >= 60) return "Mixed week: structure held in many matches, but execution-driven variance showed up across leagues.";
+  if (alignmentRate >= 80)
+    return "European football was structurally stable this week: most outcomes followed pregame readiness (RAI).";
+  if (alignmentRate >= 60)
+    return "Mixed week: structure held in many matches, but execution-driven variance showed up across leagues.";
   return "High volatility week: many outcomes conflicted with pregame structure (RAI), suggesting strong execution/variance effects.";
 }
 
 /* ================= MAIN ================= */
 
 export async function computeSoccerEuropeAutoSnapshot(): Promise<SoccerEuropeSnapshot> {
-  // Fetch all leagues in parallel
   const leagueResults = await Promise.all(
     EURO_LEAGUES.map(async (L) => {
       const games = await getSoccerGames(L.espn);
@@ -130,8 +143,8 @@ export async function computeSoccerEuropeAutoSnapshot(): Promise<SoccerEuropeSna
     })
   );
 
-  // Build surprise list across leagues
   const surprisesAll: SoccerEuropeSnapshot["topSurprises"] = [];
+  const analyzedFixtures: AnalyzedFixture[] = [];
 
   let totalGames = 0;
   let noSurprise = 0;
@@ -139,6 +152,12 @@ export async function computeSoccerEuropeAutoSnapshot(): Promise<SoccerEuropeSna
   for (const { league, finals } of leagueResults) {
     for (const g of finals) {
       totalGames++;
+
+      analyzedFixtures.push({
+        leagueLabel: league.label,
+        home: g.home.name,
+        away: g.away.name,
+      });
 
       const rai = computeRAI(g);
       const pai = computePAI(g);
@@ -161,7 +180,9 @@ export async function computeSoccerEuropeAutoSnapshot(): Promise<SoccerEuropeSna
   }
 
   const surprises = totalGames - noSurprise;
-  const alignmentRate = totalGames ? Math.round((noSurprise / totalGames) * 100) : 0;
+  const alignmentRate = totalGames
+    ? Math.round((noSurprise / totalGames) * 100)
+    : 0;
 
   const weeklySummary: WeeklyFAIRSummary = {
     games: totalGames,
@@ -177,8 +198,13 @@ export async function computeSoccerEuropeAutoSnapshot(): Promise<SoccerEuropeSna
 
   return {
     updatedAt: new Date().toISOString(),
-    leaguesIncluded: EURO_LEAGUES.map((l) => ({ key: l.key, label: l.label, slug: l.slug })),
+    leaguesIncluded: EURO_LEAGUES.map((l) => ({
+      key: l.key,
+      label: l.label,
+      slug: l.slug,
+    })),
     weeklySummary,
     topSurprises,
+    analyzedFixtures, // 👈 traçabilité complète
   };
 }
