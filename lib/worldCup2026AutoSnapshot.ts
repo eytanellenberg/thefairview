@@ -1,5 +1,5 @@
-// lib/nbaAutoSnapshot.ts
-import { getNBAGames, NormalizedGame } from "@/lib/providers/espn";
+// lib/worldCup2026AutoSnapshot.ts
+import { getSoccerGames, NormalizedGame } from "@/lib/providers/espn";
 
 /* ================= TYPES ================= */
 
@@ -35,7 +35,7 @@ export type FAIRMatch = {
   surprise: FAIRSurprise;
 };
 
-export type NBAAutoSnapshot = {
+export type WorldCup2026AutoSnapshot = {
   updatedAt: string;
   matches: FAIRMatch[];
   topSurprises: {
@@ -171,8 +171,8 @@ function computeSurprise(
 
 /* ================= MAIN ================= */
 
-export async function computeNBAAutoSnapshot(): Promise<NBAAutoSnapshot> {
-  const games = await getNBAGames();
+export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026AutoSnapshot> {
+const games = await getSoccerGames("soccer/fifa.worldcup");
 
   const finals = games
     .filter((g) => g.status === "FINAL")
