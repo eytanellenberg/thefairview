@@ -26,14 +26,22 @@ export default async function SoccerEuropePage() {
           </p>
         </div>
 
-        <Link
-          href="/soccer/champions-league"
-          className="inline-flex items-center px-4 py-2 rounded-lg border bg-gray-900 text-white hover:bg-gray-800"
-        >
-          Champions League →
-        </Link>
-      </div>
+<div className="flex gap-2 flex-wrap">
+  <Link
+    href="/soccer/champions-league"
+    className="inline-flex items-center px-4 py-2 rounded-lg border bg-gray-900 text-white hover:bg-gray-800"
+  >
+    Champions League →
+  </Link>
 
+  <Link
+    href="/soccer/world-cup-2026"
+    className="inline-flex items-center px-4 py-2 rounded-lg border bg-blue-700 text-white hover:bg-blue-600"
+  >
+    World Cup 2026 →
+  </Link>
+</div>
+</div>
       {/* WEEKLY SUMMARY */}
       <section className="mt-6 border rounded-lg p-4 bg-gray-50">
         <h2 className="text-lg font-semibold mb-3">
