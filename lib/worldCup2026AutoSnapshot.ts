@@ -2,7 +2,7 @@
 import { getSoccerGames, NormalizedGame } from "@/lib/providers/espn";
 
 /* ================= TYPES ================= */
-
+const games: NormalizedGame[] = [];
 export type FAIRLever = { label: string; value: number };
 
 export type FAIRSurprise = {
@@ -172,7 +172,7 @@ function computeSurprise(
 /* ================= MAIN ================= */
 
 export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026AutoSnapshot> {
-const games = [];
+const games: NormalizedGame[] = [];
 
   const finals = games
     .filter((g) => g.status === "FINAL")
