@@ -139,20 +139,20 @@ function computeRAI(g: NormalizedGame) {
   return {
     edgeTeam,
     valueAbs: r2(Math.abs(rankingEdge)),
-    levers: [
-      {
-        label: "FIFA ranking differential",
-        value: r2(rankingEdge),
-      },
-      {
-        label: "Home advantage",
-        value: 0,
-      },
-      {
-        label: "Tournament context",
-        value: 0,
-      },
-    ],
+levers: [
+  {
+    label: "FIFA ranking differential",
+    value: r2(rankingEdge),
+  },
+  {
+    label: "Recent form",
+    value: 0,
+  },
+  {
+    label: "Tournament experience",
+    value: 0,
+  },
+],
   };
 }
 
