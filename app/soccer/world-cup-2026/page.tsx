@@ -6,14 +6,17 @@ export const revalidate = 0;
 function levelBadge(
   level: "MINOR" | "MODERATE" | "MAJOR" | "NONE"
 ) {
-  if (level === "MAJOR")
+  if (level === "MAJOR") {
     return "bg-red-100 text-red-800 border-red-200";
+  }
 
-  if (level === "MODERATE")
+  if (level === "MODERATE") {
     return "bg-orange-100 text-orange-800 border-orange-200";
+  }
 
-  if (level === "MINOR")
+  if (level === "MINOR") {
     return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  }
 
   return "bg-gray-100 text-gray-600 border-gray-200";
 }
@@ -23,24 +26,38 @@ export default async function WorldCup2026Page() {
 
   const totalGames = data.matches.length;
 
-  const surprises = data.matches.filter(
-    (m) => m.surprise.isSurprise
+  const upsets = data.matches.filter(
+    (m) =>
+      m.surprise.isSurprise &&
+      m.surprise.winner !== "Draw"
   );
 
-  const noSurprises =
-    totalGames - surprises.length;
+  const drawDeviations = data.matches.filter(
+    (m) =>
+      m.surprise.isSurprise &&
+      m.surprise.winner === "Draw"
+  );
+
+  const alignedGames =
+    totalGames -
+    upsets.length -
+    drawDeviations.length;
+
+  const totalDeviations =
+    upsets.length +
+    drawDeviations.length;
 
   const alignmentRate =
     totalGames > 0
       ? Math.round(
-          (noSurprises / totalGames) * 100
+          (alignedGames / totalGames) * 100
         )
       : 0;
 
   const takeaway =
-    surprises.length === 0
+    totalDeviations === 0
       ? `This World Cup slate was structurally stable: ${alignmentRate}% of matches followed pregame readiness signals (RAI).`
-      : `${surprises.length} FAIR upset(s) were detected where postgame execution diverged from structural expectations.`;
+      : `${upsets.length} upset(s) and ${drawDeviations.length} draw deviation(s) were detected where postgame outcomes diverged from structural expectations.`;
 
   return (
     <main className="max-w-4xl mx-auto p-6 bg-white text-gray-900">
@@ -52,11 +69,13 @@ export default async function WorldCup2026Page() {
         Updated at{" "}
         {new Date(
           data.updatedAt
-        ).toLocaleString()}{" "}
-        · Matches: {totalGames}
+        ).toLocaleString()}
+        {" · "}
+        Matches: {totalGames}
       </p>
 
       {/* TOURNAMENT SUMMARY */}
+
       <section className="mb-6 border rounded-lg p-4 bg-gray-50">
         <h2 className="text-lg font-semibold mb-2">
           Tournament FAIR Summary
@@ -69,18 +88,28 @@ export default async function WorldCup2026Page() {
           </li>
 
           <li>
-            No-surprise games:{" "}
-            <strong>{noSurprises}</strong>
+            Aligned outcomes:{" "}
+            <strong>{alignedGames}</strong>
+          </li>
+
+          <li>
+            Draw deviations:{" "}
+            <strong>{drawDeviations.length}</strong>
+          </li>
+
+          <li>
+            Upsets:{" "}
+            <strong>{upsets.length}</strong>
+          </li>
+
+          <li>
+            Total deviations:{" "}
+            <strong>{totalDeviations}</strong>
           </li>
 
           <li>
             Alignment rate:{" "}
             <strong>{alignmentRate}%</strong>
-          </li>
-
-          <li>
-            Upsets detected:{" "}
-            <strong>{surprises.length}</strong>
           </li>
         </ul>
 
@@ -96,6 +125,7 @@ export default async function WorldCup2026Page() {
       </section>
 
       {/* TOP SURPRISES */}
+
       <section className="mb-8 border rounded-lg p-4 bg-gray-50">
         <h2 className="text-lg font-semibold mb-3">
           🔥 Top FAIR Surprises
@@ -143,6 +173,7 @@ export default async function WorldCup2026Page() {
       </section>
 
       {/* MATCH DETAILS */}
+
       {data.matches.map((m, i) => (
         <section
           key={i}
@@ -162,8 +193,10 @@ export default async function WorldCup2026Page() {
 
           <p className="mb-2">
             RAI edge:{" "}
-            <strong>{m.rai.edge}</strong> (+
-            {m.rai.value.toFixed(2)})
+            <strong>{m.rai.edge}</strong>
+            {" (+"}
+            {m.rai.value.toFixed(2)}
+            {")"}
           </p>
 
           <ul className="list-disc ml-5 text-sm mb-4">
@@ -177,16 +210,12 @@ export default async function WorldCup2026Page() {
           </ul>
 
           <h3 className="font-semibold">
-            Postgame — Comparative Execution
-            (PAI)
+            Postgame — Comparative Execution (PAI)
           </h3>
 
           {[m.pai.teamA, m.pai.teamB].map(
             (t, k) => (
-              <div
-                key={k}
-                className="mb-3"
-              >
+              <div key={k} className="mb-3">
                 <p className="font-medium">
                   {t.name}
                 </p>
@@ -195,9 +224,7 @@ export default async function WorldCup2026Page() {
                   {t.levers.map((l, j) => (
                     <li key={j}>
                       {l.label}:{" "}
-                      {l.value > 0
-                        ? "+"
-                        : ""}
+                      {l.value > 0 ? "+" : ""}
                       {l.value.toFixed(2)}
                     </li>
                   ))}
