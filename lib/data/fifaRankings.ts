@@ -1,0 +1,81 @@
+export const FIFA_RANKINGS: Record<string, number> = {
+  Argentina: 1877.27,
+  Spain: 1874.71,
+  France: 1870.70,
+  England: 1828.02,
+  Portugal: 1767.85,
+  Brazil: 1765.86,
+  Morocco: 1755.10,
+  Netherlands: 1753.57,
+  Belgium: 1742.24,
+  Germany: 1735.77,
+
+  Croatia: 1714.87,
+  Italy: 1704.73,
+  Colombia: 1698.35,
+  Mexico: 1687.48,
+  Senegal: 1684.07,
+  Uruguay: 1673.07,
+  USA: 1671.23,
+  "United States": 1671.23,
+
+  Japan: 1661.58,
+  Switzerland: 1650.06,
+  "IR Iran": 1619.58,
+  Denmark: 1619.47,
+  "Korea Republic": 1591.63,
+  "South Korea": 1591.63,
+
+  Australia: 1579.34,
+  Türkiye: 1605.73,
+
+  Ecuador: 1598.52,
+  Austria: 1597.40,
+
+  Nigeria: 1585.02,
+  Algeria: 1571.03,
+  Egypt: 1562.37,
+  Canada: 1559.48,
+  Norway: 1557.44,
+
+  "Côte d'Ivoire": 1540.87,
+  "Ivory Coast": 1540.87,
+
+  Panama: 1539.16,
+  Scotland: 1503.34,
+  Paraguay: 1505.35,
+  Czechia: 1505.74,
+  Sweden: 1509.79,
+  Hungary: 1506.39,
+  Serbia: 1502.13,
+
+  Tunisia: 1476.41,
+  "Congo DR": 1474.43,
+  Slovakia: 1473.66,
+  Greece: 1473.19,
+  Venezuela: 1469.18,
+  Qatar: 1450.31,
+  Uzbekistan: 1458.73,
+  Chile: 1458.20,
+  Peru: 1457.69,
+  "Costa Rica": 1456.03,
+  Romania: 1455.89,
+  Mali: 1455.59,
+  Iraq: 1446.28,
+  "Saudi Arabia": 1423.88,
+  "South Africa": 1428.38,
+
+  "Bosnia and Herzegovina": 1387.22,
+  "Bosnia-Herzegovina": 1387.22,
+
+  Jordan: 1387.74,
+  Honduras: 1378.97,
+
+  "Cape Verde": 1371.11,
+  "Cabo Verde": 1371.11,
+
+  Ghana: 1346.88,
+  Curaçao: 1294.77,
+  Haiti: 1293.10,
+  "New Zealand": 1275.58
+};
