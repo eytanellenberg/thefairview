@@ -16,7 +16,7 @@ export default async function WorldCup2026Page() {
   const data = await computeWorldCup2026AutoSnapshot();
 
   const totalGames = data.matches.length;
-  const surprises = data.matches.filter(m => m.surprise.isSurprise);
+  const surprises = data.matches.filter((m) => m.surprise.isSurprise);
   const noSurprises = totalGames - surprises.length;
   const alignmentRate =
     totalGames > 0
@@ -30,22 +30,33 @@ export default async function WorldCup2026Page() {
       </h1>
 
       <p className="text-sm text-gray-600 mb-6">
-        Updated at {new Date(data.updatedAt).toLocaleString()} · Matches: {totalGames}
+        Updated at {new Date(data.updatedAt).toLocaleString()} · Matches:{" "}
+        {totalGames}
       </p>
 
+      {/* TOURNAMENT SUMMARY */}
       <section className="mb-6 border rounded-lg p-4 bg-gray-50">
         <h2 className="text-lg font-semibold mb-2">
           Tournament FAIR Summary
         </h2>
 
         <ul className="text-sm space-y-1">
-          <li>Matches analyzed: <strong>{totalGames}</strong></li>
-          <li>No-surprise games: <strong>{noSurprises}</strong></li>
-          <li>Alignment rate: <strong>{alignmentRate}%</strong></li>
-          <li>Upsets detected: <strong>{surprises.length}</strong></li>
+          <li>
+            Matches analyzed: <strong>{totalGames}</strong>
+          </li>
+          <li>
+            No-surprise games: <strong>{noSurprises}</strong>
+          </li>
+          <li>
+            Alignment rate: <strong>{alignmentRate}%</strong>
+          </li>
+          <li>
+            Upsets detected: <strong>{surprises.length}</strong>
+          </li>
         </ul>
       </section>
 
+      {/* TOP SURPRISES */}
       <section className="mb-8 border rounded-lg p-4 bg-gray-50">
         <h2 className="text-lg font-semibold mb-3">
           🔥 Top FAIR Surprises
@@ -62,10 +73,12 @@ export default async function WorldCup2026Page() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-semibold">{s.matchup}</div>
-                    <div className="text-sm">
+
+                    <div className="text-sm text-gray-700">
                       RAI edge: {s.raiEdge}
                     </div>
-                    <div className="text-sm">
+
+                    <div className="text-sm text-gray-700">
                       Surprise score: {s.score.toFixed(2)}
                     </div>
                   </div>
@@ -83,6 +96,85 @@ export default async function WorldCup2026Page() {
           </ul>
         )}
       </section>
+
+      {/* MATCH DETAILS */}
+      {data.matches.map((m, i) => (
+        <section key={i} className="mb-8 border-b pb-6">
+          <h2 className="text-lg font-semibold">
+            {m.matchup}
+          </h2>
+
+          <p className="text-sm mb-3">
+            Final score: {m.finalScore}
+          </p>
+
+          <h3 className="font-semibold">
+            Pregame — Comparative Readiness (RAI)
+          </h3>
+
+          <p className="mb-2">
+            RAI edge: <strong>{m.rai.edge}</strong> (+{m.rai.value.toFixed(2)})
+          </p>
+
+          <ul className="list-disc ml-5 text-sm mb-4">
+            {m.rai.levers.map((l, j) => (
+              <li key={j}>
+                {l.label}: {l.value > 0 ? "+" : ""}
+                {l.value.toFixed(2)}
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="font-semibold">
+            Postgame — Comparative Execution (PAI)
+          </h3>
+
+          {[m.pai.teamA, m.pai.teamB].map((t, k) => (
+            <div key={k} className="mb-3">
+              <p className="font-medium">{t.name}</p>
+
+              <ul className="list-disc ml-5 text-sm">
+                {t.levers.map((l, j) => (
+                  <li key={j}>
+                    {l.label}: {l.value > 0 ? "+" : ""}
+                    {l.value.toFixed(2)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {m.surprise.isSurprise && (
+            <div className="mt-3 border rounded-md p-3 bg-gray-50">
+              <div className="font-semibold">
+                FAIR Surprise
+              </div>
+
+              <div className="text-sm text-gray-700">
+                Winner: <strong>{m.surprise.winner}</strong> · RAI favored:{" "}
+                <strong>{m.surprise.raiFavored}</strong>
+              </div>
+
+              <div className="text-sm text-gray-700">
+                Surprise score:{" "}
+                <strong>{m.surprise.score.toFixed(2)}</strong>
+
+                <span
+                  className={`ml-2 inline-block px-2 py-0.5 text-xs font-semibold border rounded ${levelBadge(
+                    m.surprise.level
+                  )}`}
+                >
+                  {m.surprise.level}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs italic mt-2">
+            Outcome interpreted through execution deltas relative to pregame structural expectations.
+          </p>
+        </section>
+      ))}
     </main>
   );
 }
