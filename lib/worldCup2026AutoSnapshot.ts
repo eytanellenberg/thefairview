@@ -103,14 +103,17 @@ function computeRAI(g: NormalizedGame) {
       ? g.home.name
       : g.away.name;
 
+  const favoredEdge =
+    Math.abs(rankingEdge);
+
   return {
     edgeTeam,
-    valueAbs: Math.abs(rankingEdge),
+    valueAbs: favoredEdge,
 
     levers: [
       {
         label: "FIFA ranking differential",
-        value: rankingEdge,
+        value: favoredEdge,
       },
       {
         label: "Recent form",
