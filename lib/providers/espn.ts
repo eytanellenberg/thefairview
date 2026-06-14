@@ -119,19 +119,19 @@ export async function getSoccerGames(
 ): Promise<NormalizedGame[]> {
   const all: NormalizedGame[] = [];
 
-  // On remonte quelques jours pour attraper les derniers matchs FINAL
-  for (let i = 0; i < 60; i++) {
+  // Remonte jusqu'à 14 jours de matchs
+  for (let i = 0; i < 14; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
 
     const json = await fetchScoreboard(league, yyyymmdd(d));
+
     const games = (json.events || [])
       .map(normalize)
       .filter(Boolean) as NormalizedGame[];
 
     all.push(...games);
-    if (games.some((g) => g.status === "FINAL")) break;
   }
 
   return all;
-           }
+}
