@@ -2,7 +2,6 @@
 import { getSoccerGames, NormalizedGame } from "@/lib/providers/espn";
 
 /* ================= TYPES ================= */
-const games: NormalizedGame[] = [];
 export type FAIRLever = { label: string; value: number };
 
 export type FAIRSurprise = {
