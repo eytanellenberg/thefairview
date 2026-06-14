@@ -54,10 +54,10 @@ export default async function WorldCup2026Page() {
         )
       : 0;
 
-  const takeaway =
-    totalDeviations === 0
-      ? `This World Cup slate was structurally stable: ${alignmentRate}% of matches followed pregame readiness signals (RAI).`
-      : `${upsets.length} upset(s) and ${drawDeviations.length} draw deviation(s) were detected where postgame outcomes diverged from structural expectations.`;
+const takeaway =
+  totalDeviations === 0
+    ? `This World Cup slate was structurally stable: ${alignmentRate}% of matches aligned with FIFA-based readiness expectations.`
+    : `${upsets.length} upset(s) and ${drawDeviations.length} draw deviation(s) were observed relative to FIFA-based readiness expectations.`;
 
   return (
     <main className="max-w-4xl mx-auto p-6 bg-white text-gray-900">
