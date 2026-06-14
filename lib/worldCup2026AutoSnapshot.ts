@@ -52,32 +52,60 @@ export type WorldCup2026AutoSnapshot = {
 /* ================= FIFA RANKINGS ================= */
 
 const FIFA_RANKINGS: Record<string, number> = {
-Croatia: 1700,
-"United States": 1700,
-Switzerland: 1680,
-Mexico: 1680,
-Uruguay: 1670,
-Colombia: 1660,
-Canada: 1650,
-Japan: 1630,
-Senegal: 1620,
-Scotland: 1610,
-Ecuador: 1610,
-"South Korea": 1580,
-Australia: 1560,
-"Türkiye": 1550,
-Algeria: 1520,
-Czechia: 1520,
-Egypt: 1500,
-Paraguay: 1480,
-"Bosnia-Herzegovina": 1470,
-Qatar: 1450,
-"South Africa": 1450,
-"Cape Verde": 1420,
-Haiti: 1400,
-"Congo DR": 1400,
-"Curaçao": 1380,
-Jordan: 1350,
+  Argentina: 1877.27,
+  Spain: 1874.71,
+  France: 1870.70,
+  England: 1828.02,
+  Portugal: 1767.85,
+  Brazil: 1765.34,
+  Morocco: 1755.62,
+  Netherlands: 1753.57,
+  Belgium: 1742.24,
+  Germany: 1735.77,
+
+  Croatia: 1714.87,
+  Mexico: 1700.98,
+  Colombia: 1698.35,
+  USA: 1688.53,
+  "United States": 1688.53,
+  Senegal: 1684.07,
+  Uruguay: 1673.07,
+  Japan: 1661.58,
+  Switzerland: 1640.92,
+  "IR Iran": 1619.58,
+  "Korea Republic": 1612.55,
+  "South Korea": 1612.55,
+  Australia: 1605.61,
+  Ecuador: 1598.52,
+  Austria: 1597.40,
+  Türkiye: 1579.47,
+  Algeria: 1571.03,
+  Egypt: 1562.37,
+  Norway: 1557.44,
+  Canada: 1551.50,
+  "Côte d'Ivoire": 1540.87,
+  "Ivory Coast": 1540.87,
+  Panama: 1539.16,
+  Scotland: 1518.77,
+  Sweden: 1509.79,
+  Paraguay: 1488.05,
+  Czechia: 1484.82,
+  Tunisia: 1476.41,
+  "Congo DR": 1474.43,
+  Qatar: 1459.45,
+  Uzbekistan: 1458.73,
+  Iraq: 1446.28,
+  "Saudi Arabia": 1423.88,
+  "South Africa": 1414.88,
+  "Bosnia and Herzegovina": 1395.19,
+  "Bosnia-Herzegovina": 1395.19,
+  Jordan: 1387.74,
+  "Cape Verde": 1371.11,
+  "Cabo Verde": 1371.11,
+  Ghana: 1346.88,
+  Curaçao: 1294.77,
+  Haiti: 1277.67,
+  "New Zealand": 1275.58
 };
 
 /* ================= HELPERS ================= */
@@ -139,23 +167,22 @@ function computeRAI(g: NormalizedGame) {
   return {
     edgeTeam,
     valueAbs: r2(Math.abs(rankingEdge)),
-levers: [
-  {
-    label: "FIFA ranking differential",
-    value: r2(rankingEdge),
-  },
-  {
-    label: "Recent form",
-    value: 0,
-  },
-  {
-    label: "Tournament experience",
-    value: 0,
-  },
-],
+    levers: [
+      {
+        label: "FIFA ranking differential",
+        value: r2(rankingEdge),
+      },
+      {
+        label: "Recent form",
+        value: 0,
+      },
+      {
+        label: "Tournament experience",
+        value: 0,
+      },
+    ],
   };
 }
-
 /* ================= PAI ================= */
 
 function computePAI(g: NormalizedGame) {
