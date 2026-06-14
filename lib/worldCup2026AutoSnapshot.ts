@@ -313,29 +313,26 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
       };
     });
 
-  const topSurprises = matches
-    .filter(
-      (m) =>
-        m.surprise.isSurprise
-    )
-    .sort(
-      (a, b) =>
-        b.surprise.score -
-        a.surprise.score
-    )
-    .slice(0, 5)
-    .map((m) => ({
-      matchup: m.matchup,
-      raiEdge: `${m.rai.edge} (+${m.rai.value})`,
-      logicalOutcome:
-        m.surprise.logicalOutcome,
-      score: m.surprise.score,
-      level:
-        m.surprise.level as
-          | "MINOR"
-          | "MODERATE"
-          | "MAJOR",
-    }));
+const topSurprises = matches
+  .filter((m) => m.surprise.isSurprise)
+  .sort(
+    (a, b) =>
+      b.surprise.score -
+      a.surprise.score
+  )
+  .slice(0, 5)
+  .map((m) => ({
+    matchup: m.matchup,
+    raiEdge: `${m.rai.edge} (+${m.rai.value})`,
+    logicalOutcome:
+      m.surprise.logicalOutcome,
+    score: m.surprise.score,
+    level:
+      m.surprise.level as
+        | "MINOR"
+        | "MODERATE"
+        | "MAJOR",
+  }));
 
   return {
     updatedAt:
