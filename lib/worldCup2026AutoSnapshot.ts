@@ -201,18 +201,35 @@ function computeSurprise(
   rai: ReturnType<typeof computeRAI>,
   pai: ReturnType<typeof computePAI>
 ): FAIRSurprise {
-  const w = winner(g);
+const w = winner(g);
 
-  if (!w) {
+/* DRAW CASE */
+
+if (!w) {
+  const drawDeviation = rai.valueAbs >= 2;
+
+  if (!drawDeviation) {
     return {
       isSurprise: false,
-      winner: "—",
+      winner: "Draw",
       raiFavored: rai.edgeTeam,
       logicalOutcome: 0,
       score: 0,
       level: "NONE",
     };
   }
+
+  const score = r2(rai.valueAbs * 0.5);
+
+  return {
+    isSurprise: true,
+    winner: "Draw",
+    raiFavored: rai.edgeTeam,
+    logicalOutcome: -rai.valueAbs,
+    score,
+    level: level(score),
+  };
+}
 
   const isSurprise =
     w !== rai.edgeTeam;
