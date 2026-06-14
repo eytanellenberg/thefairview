@@ -115,14 +115,6 @@ function computeRAI(g: NormalizedGame) {
         label: "FIFA ranking differential",
         value: favoredEdge,
       },
-      {
-        label: "Recent form",
-        value: 0,
-      },
-      {
-        label: "Tournament experience",
-        value: 0,
-      },
     ],
   };
 }
