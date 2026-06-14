@@ -172,7 +172,7 @@ function computeSurprise(
 /* ================= MAIN ================= */
 
 export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026AutoSnapshot> {
-const games: NormalizedGame[] = [];
+const games = await getSoccerGames("soccer/fra.1");
 
   const finals = games
     .filter((g) => g.status === "FINAL")
