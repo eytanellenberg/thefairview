@@ -1,8 +1,11 @@
-// lib/worldCup2026AutoSnapshot.ts
 import { getSoccerGames, NormalizedGame } from "@/lib/providers/espn";
 
 /* ================= TYPES ================= */
-export type FAIRLever = { label: string; value: number };
+
+export type FAIRLever = {
+  label: string;
+  value: number;
+};
 
 export type FAIRSurprise = {
   isSurprise: boolean;
@@ -46,46 +49,120 @@ export type WorldCup2026AutoSnapshot = {
   }[];
 };
 
+/* ================= FIFA RANKINGS ================= */
+
+const FIFA_RANKINGS: Record<string, number> = {
+  Argentina: 1877.27,
+  Spain: 1874.71,
+  France: 1870.7,
+  England: 1828.02,
+  Portugal: 1767.85,
+  Brazil: 1765.34,
+  Morocco: 1755.62,
+  Netherlands: 1753.57,
+  Belgium: 1742.24,
+  Germany: 1735.77,
+
+  Croatia: 1700,
+  United States: 1700,
+  Switzerland: 1680,
+  Mexico: 1680,
+  Uruguay: 1670,
+  Colombia: 1660,
+  Canada: 1650,
+  Japan: 1630,
+  Senegal: 1620,
+  Scotland: 1610,
+  Ecuador: 1610,
+  South Korea: 1580,
+  Australia: 1560,
+  Türkiye: 1550,
+  Algeria: 1520,
+  Czechia: 1520,
+  Egypt: 1500,
+  Paraguay: 1480,
+  Bosnia-Herzegovina: 1470,
+  Qatar: 1450,
+  South Africa: 1450,
+  Cape Verde: 1420,
+  Haiti: 1400,
+  Congo DR: 1400,
+  Curaçao: 1380,
+  Jordan: 1350,
+};
+
 /* ================= HELPERS ================= */
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
-const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
+
+const clamp = (
+  n: number,
+  min: number,
+  max: number
+) => Math.max(min, Math.min(max, n));
 
 function finalScore(g: NormalizedGame) {
-  if (g.home.score === null || g.away.score === null) return "—";
+  if (g.home.score === null || g.away.score === null) {
+    return "—";
+  }
+
   return `${g.home.score} – ${g.away.score}`;
 }
 
 function margin(g: NormalizedGame) {
-  if (g.home.score === null || g.away.score === null) return 0;
+  if (g.home.score === null || g.away.score === null) {
+    return 0;
+  }
+
   return g.home.score - g.away.score;
 }
 
 function winner(g: NormalizedGame) {
   if (!g.winner) return null;
-  return g.winner === "HOME" ? g.home.name : g.away.name;
+
+  return g.winner === "HOME"
+    ? g.home.name
+    : g.away.name;
 }
 
 /* ================= RAI ================= */
 
 function computeRAI(g: NormalizedGame) {
-  const hs = g.home.score ?? 0;
-  const as = g.away.score ?? 0;
+  const homeRank =
+    FIFA_RANKINGS[g.home.name] ?? 1500;
 
-  const homeCourt = 0.6;
-  const form = clamp((hs - as) / 10, -2, 2);
-  const record = clamp((hs - as) / 20, -1.5, 1.5);
+  const awayRank =
+    FIFA_RANKINGS[g.away.name] ?? 1500;
 
-  const raw = homeCourt + form + record;
-  const edgeTeam = raw >= 0 ? g.home.name : g.away.name;
+  const diff = homeRank - awayRank;
+
+  const rankingEdge = clamp(
+    diff / 100,
+    -3,
+    3
+  );
+
+  const edgeTeam =
+    diff >= 0
+      ? g.home.name
+      : g.away.name;
 
   return {
     edgeTeam,
-    valueAbs: r2(Math.abs(raw)),
+    valueAbs: r2(Math.abs(rankingEdge)),
     levers: [
-      { label: "Home-court context", value: r2(homeCourt * (raw >= 0 ? 1 : -1)) },
-      { label: "Recent scoring form", value: r2(form) },
-      { label: "Record proxy", value: r2(record) },
+      {
+        label: "FIFA ranking differential",
+        value: r2(rankingEdge),
+      },
+      {
+        label: "Home advantage",
+        value: 0,
+      },
+      {
+        label: "Tournament context",
+        value: 0,
+      },
     ],
   };
 }
@@ -93,9 +170,13 @@ function computeRAI(g: NormalizedGame) {
 /* ================= PAI ================= */
 
 function computePAI(g: NormalizedGame) {
-  const ms = clamp(margin(g) / 8, -3, 3);
+  const ms = clamp(
+    margin(g) / 8,
+    -3,
+    3
+  );
 
-  const off = r2(ms * 1.0);
+  const off = r2(ms);
   const shot = r2(ms * 0.7);
   const def = r2(ms * 0.85);
 
@@ -103,30 +184,58 @@ function computePAI(g: NormalizedGame) {
     home: {
       name: g.home.name,
       levers: [
-        { label: "Offensive execution", value: off },
-        { label: "Shot conversion", value: shot },
-        { label: "Defensive resistance", value: def },
+        {
+          label: "Offensive execution",
+          value: off,
+        },
+        {
+          label: "Shot conversion",
+          value: shot,
+        },
+        {
+          label: "Defensive resistance",
+          value: def,
+        },
       ],
     },
+
     away: {
       name: g.away.name,
       levers: [
-        { label: "Offensive execution", value: -off },
-        { label: "Shot conversion", value: -shot },
-        { label: "Defensive resistance", value: -def },
+        {
+          label: "Offensive execution",
+          value: -off,
+        },
+        {
+          label: "Shot conversion",
+          value: -shot,
+        },
+        {
+          label: "Defensive resistance",
+          value: -def,
+        },
       ],
     },
-    intensityAbs: r2((Math.abs(off) + Math.abs(shot) + Math.abs(def)) / 3),
+
+    intensityAbs: r2(
+      (
+        Math.abs(off) +
+        Math.abs(shot) +
+        Math.abs(def)
+      ) / 3
+    ),
   };
 }
 
-function level(score: number): "MINOR" | "MODERATE" | "MAJOR" {
+/* ================= SURPRISE ================= */
+
+function level(
+  score: number
+): "MINOR" | "MODERATE" | "MAJOR" {
   if (score < 0.75) return "MINOR";
   if (score < 1.75) return "MODERATE";
   return "MAJOR";
 }
-
-/* ================= SURPRISE ================= */
 
 function computeSurprise(
   g: NormalizedGame,
@@ -134,7 +243,8 @@ function computeSurprise(
   pai: ReturnType<typeof computePAI>
 ): FAIRSurprise {
   const w = winner(g);
-  if (!w)
+
+  if (!w) {
     return {
       isSurprise: false,
       winner: "—",
@@ -143,11 +253,17 @@ function computeSurprise(
       score: 0,
       level: "NONE",
     };
+  }
 
-  const isSurprise = w !== rai.edgeTeam;
-  const logicalOutcome = isSurprise ? -rai.valueAbs : rai.valueAbs;
+  const isSurprise =
+    w !== rai.edgeTeam;
 
-  if (!isSurprise)
+  const logicalOutcome =
+    isSurprise
+      ? -rai.valueAbs
+      : rai.valueAbs;
+
+  if (!isSurprise) {
     return {
       isSurprise: false,
       winner: w,
@@ -156,8 +272,13 @@ function computeSurprise(
       score: 0,
       level: "NONE",
     };
+  }
 
-  const score = r2(rai.valueAbs * pai.intensityAbs);
+  const score = r2(
+    rai.valueAbs *
+      pai.intensityAbs
+  );
+
   return {
     isSurprise: true,
     winner: w,
@@ -171,41 +292,78 @@ function computeSurprise(
 /* ================= MAIN ================= */
 
 export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026AutoSnapshot> {
-const games = await getSoccerGames("soccer/fifa.world");
+  const games = await getSoccerGames(
+    "soccer/fifa.world"
+  );
 
   const finals = games
-    .filter((g) => g.status === "FINAL")
-    .sort((a, b) => new Date(b.dateUtc).getTime() - new Date(a.dateUtc).getTime());
+    .filter(
+      (g) => g.status === "FINAL"
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.dateUtc).getTime() -
+        new Date(a.dateUtc).getTime()
+    );
 
-  const matches: FAIRMatch[] = finals.map((g) => {
-    const rai = computeRAI(g);
-    const pai = computePAI(g);
-    const surprise = computeSurprise(g, rai, pai);
+  const matches: FAIRMatch[] =
+    finals.map((g) => {
+      const rai = computeRAI(g);
+      const pai = computePAI(g);
+      const surprise =
+        computeSurprise(
+          g,
+          rai,
+          pai
+        );
 
-    return {
-      matchup: `${g.home.name} vs ${g.away.name}`,
-      finalScore: finalScore(g),
-      dateUtc: g.dateUtc,
-      rai: { edge: rai.edgeTeam, value: rai.valueAbs, levers: rai.levers },
-      pai: { teamA: pai.home, teamB: pai.away },
-      surprise,
-    };
-  });
+      return {
+        matchup: `${g.home.name} vs ${g.away.name}`,
+        finalScore: finalScore(g),
+        dateUtc: g.dateUtc,
+
+        rai: {
+          edge: rai.edgeTeam,
+          value: rai.valueAbs,
+          levers: rai.levers,
+        },
+
+        pai: {
+          teamA: pai.home,
+          teamB: pai.away,
+        },
+
+        surprise,
+      };
+    });
 
   const topSurprises = matches
-    .filter((m) => m.surprise.isSurprise)
-    .sort((a, b) => b.surprise.score - a.surprise.score)
+    .filter(
+      (m) =>
+        m.surprise.isSurprise
+    )
+    .sort(
+      (a, b) =>
+        b.surprise.score -
+        a.surprise.score
+    )
     .slice(0, 5)
     .map((m) => ({
       matchup: m.matchup,
       raiEdge: `${m.rai.edge} (+${m.rai.value})`,
-      logicalOutcome: m.surprise.logicalOutcome,
+      logicalOutcome:
+        m.surprise.logicalOutcome,
       score: m.surprise.score,
-      level: m.surprise.level as "MINOR" | "MODERATE" | "MAJOR",
+      level:
+        m.surprise.level as
+          | "MINOR"
+          | "MODERATE"
+          | "MAJOR",
     }));
 
   return {
-    updatedAt: new Date().toISOString(),
+    updatedAt:
+      new Date().toISOString(),
     matches,
     topSurprises,
   };
