@@ -120,7 +120,7 @@ export async function getSoccerGames(
   const all: NormalizedGame[] = [];
 
   // On remonte quelques jours pour attraper les derniers matchs FINAL
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 60; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
 
