@@ -38,9 +38,9 @@ export default async function WorldCup2026Page() {
 
 const takeaway =
   totalDeviations === 0
-    ? `This World Cup slate was structurally stable: ${alignmentRate}% of matches aligned with FIFA-based readiness expectations.`
-    : `${upsets.length} upset(s) and ${drawDeviations.length} draw deviation(s) were observed relative to FIFA-based readiness expectations.`;
-
+    ? "No meaningful deviations from FIFA-based readiness expectations were observed."
+    : `Among the last 24 hours of World Cup matches, ${totalDeviations} meaningful deviation(s) from FIFA-based readiness expectations were observed.`;
+  
   return (
     <main className="max-w-4xl mx-auto p-6 bg-white text-gray-900">
       <h1 className="text-2xl font-semibold mb-1">
@@ -63,46 +63,46 @@ const takeaway =
           Tournament FAIR Summary
         </h2>
 
-        <ul className="text-sm space-y-1">
-          <li>
-            Matches analyzed:{" "}
-            <strong>{totalGames}</strong>
-          </li>
+<ul className="text-sm space-y-1">
+  <li>
+    Matches analyzed:{" "}
+    <strong>{totalGames}</strong>
+  </li>
 
-          <li>
-            Aligned outcomes:{" "}
-            <strong>{alignedGames}</strong>
-          </li>
+  <li>
+    Aligned outcomes:{" "}
+    <strong>{alignedGames}</strong>
+  </li>
 
-          <li>
-            Draw deviations:{" "}
-            <strong>{drawDeviations.length}</strong>
-          </li>
+  <li>
+    Meaningful deviations:{" "}
+    <strong>{totalDeviations}</strong>
+  </li>
 
-          <li>
-            Upsets:{" "}
-            <strong>{upsets.length}</strong>
-          </li>
-
-          <li>
-            Total deviations:{" "}
-            <strong>{totalDeviations}</strong>
-          </li>
-
-          <li>
-            Alignment rate:{" "}
-            <strong>{alignmentRate}%</strong>
-          </li>
-        </ul>
+  <li>
+    Alignment rate:{" "}
+    <strong>{alignmentRate}%</strong>
+  </li>
+</ul>
 
         <div className="mt-4 p-3 border-l-4 border-black bg-white">
           <div className="text-sm font-semibold mb-1">
             FAIR Takeaway
           </div>
 
-          <p className="text-sm text-gray-800">
-            {takeaway}
-          </p>
+<p className="text-sm text-gray-800">
+  {takeaway}
+</p>
+
+{data.topSurprises.length > 0 && (
+  <p className="text-sm text-gray-700 mt-2">
+    Main surprise:{" "}
+    <strong>{data.topSurprises[0].matchup}</strong>
+    {" — "}
+    pregame readiness favored{" "}
+    <strong>{data.topSurprises[0].raiEdge}</strong>.
+  </p>
+)}
         </div>
       </section>
 
@@ -115,7 +115,7 @@ const takeaway =
 
   {data.topSurprises.length === 0 ? (
     <p className="text-sm text-gray-600">
-      No notable performances detected.
+      No FAIR surprises detected.
     </p>
   ) : (
     <ul className="space-y-3">
