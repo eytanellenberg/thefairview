@@ -39,7 +39,7 @@ export default async function WorldCup2026Page() {
 const takeaway =
   totalDeviations === 0
     ? "No meaningful deviations from FIFA-based readiness expectations were observed."
-    : `Among the last 24 hours of World Cup matches, ${totalDeviations} meaningful deviation(s) from FIFA-based readiness expectations were observed.`;
+    : `Among the last 24 hours of World Cup matches, ${totalDeviations} meaningful deviation${totalDeviations > 1 ? "s" : ""} from FIFA-based readiness expectations ${totalDeviations > 1 ? "were" : "was"} observed.`;
   
   return (
     <main className="max-w-4xl mx-auto p-6 bg-white text-gray-900">
