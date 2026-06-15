@@ -318,18 +318,23 @@ const finals = games
     });
 
 const topSurprises = matches
-  .filter((m) => m.surprise.isSurprise)
   .sort(
     (a, b) =>
-      b.surprise.score -
-      a.surprise.score
+      Math.abs(
+        b.pai.teamA.levers[0].value
+      ) -
+      Math.abs(
+        a.pai.teamA.levers[0].value
+      )
   )
   .slice(0, 5)
   .map((m) => ({
     matchup: m.matchup,
     raiEdge: `${m.rai.edge} (+${m.rai.value})`,
     logicalOutcome: m.surprise.logicalOutcome,
-    score: m.surprise.score,
+    score: Math.abs(
+      m.pai.teamA.levers[0].value
+    ),
     level:
       m.surprise.level as
         | "MINOR"
