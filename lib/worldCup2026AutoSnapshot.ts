@@ -285,11 +285,6 @@ const finals = games
     (a, b) =>
       new Date(b.dateUtc).getTime() -
       new Date(a.dateUtc).getTime()
-  )
-  .sort(
-    (a, b) =>
-      new Date(b.dateUtc).getTime() -
-      new Date(a.dateUtc).getTime()
   );
   const matches: FAIRMatch[] =
     finals.map((g) => {
@@ -333,8 +328,7 @@ const topSurprises = matches
   .map((m) => ({
     matchup: m.matchup,
     raiEdge: `${m.rai.edge} (+${m.rai.value})`,
-    logicalOutcome:
-      m.surprise.logicalOutcome,
+    logicalOutcome: m.surprise.logicalOutcome,
     score: m.surprise.score,
     level:
       m.surprise.level as
