@@ -257,11 +257,19 @@ if (!w) {
   };
 }
 
-/* ================= MAIN ================= */
-
 export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026AutoSnapshot> {
   const games = await getSoccerGames(
     "soccer/fifa.world"
+  );
+
+  console.log(
+    "WORLD CUP GAMES",
+    games.map((g) => ({
+      home: g.home.name,
+      away: g.away.name,
+      date: g.dateUtc,
+      status: g.status,
+    }))
   );
 
   const finals = games
@@ -273,7 +281,6 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
         new Date(b.dateUtc).getTime() -
         new Date(a.dateUtc).getTime()
     );
-
   const matches: FAIRMatch[] =
     finals.map((g) => {
       const rai = computeRAI(g);
