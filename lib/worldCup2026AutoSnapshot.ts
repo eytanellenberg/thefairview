@@ -272,15 +272,20 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
     }))
   );
 
-  const finals = games
-    .filter(
-      (g) => g.status === "FINAL"
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.dateUtc).getTime() -
-        new Date(a.dateUtc).getTime()
-    );
+const last36h =
+  Date.now() - 36 * 60 * 60 * 1000;
+
+const finals = games
+  .filter(
+    (g) =>
+      g.status === "FINAL" &&
+      new Date(g.dateUtc).getTime() >= last36h
+  )
+  .sort(
+    (a, b) =>
+      new Date(b.dateUtc).getTime() -
+      new Date(a.dateUtc).getTime()
+  );
   const matches: FAIRMatch[] =
     finals.map((g) => {
       const rai = computeRAI(g);
