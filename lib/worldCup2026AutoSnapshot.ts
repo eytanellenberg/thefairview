@@ -285,7 +285,7 @@ const finals = games
     (a, b) =>
       new Date(b.dateUtc).getTime() -
       new Date(a.dateUtc).getTime()
-  );
+  )
   .sort(
     (a, b) =>
       new Date(b.dateUtc).getTime() -
