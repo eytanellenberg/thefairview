@@ -272,15 +272,20 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
     }))
   );
 
-const last36h =
-  Date.now() - 36 * 60 * 60 * 1000;
+const last24h =
+  Date.now() - 24 * 60 * 60 * 1000;
 
 const finals = games
   .filter(
     (g) =>
       g.status === "FINAL" &&
-      new Date(g.dateUtc).getTime() >= last36h
+      new Date(g.dateUtc).getTime() >= last24h
   )
+  .sort(
+    (a, b) =>
+      new Date(b.dateUtc).getTime() -
+      new Date(a.dateUtc).getTime()
+  );
   .sort(
     (a, b) =>
       new Date(b.dateUtc).getTime() -
