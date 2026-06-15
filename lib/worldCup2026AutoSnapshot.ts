@@ -211,7 +211,7 @@ if (!w) {
     };
   }
 
-  const score = r2(rai.valueAbs * 0.5);
+const score = rai.valueAbs;
 
   return {
     isSurprise: true,
@@ -242,10 +242,7 @@ if (!w) {
     };
   }
 
-  const score = r2(
-    rai.valueAbs *
-      pai.intensityAbs
-  );
+const score = rai.valueAbs;
 
   return {
     isSurprise: true,
@@ -318,23 +315,23 @@ const finals = games
     });
 
 const topSurprises = matches
+  .filter(
+    (m) =>
+      m.surprise.isSurprise &&
+      m.surprise.score >= 1
+  )
   .sort(
     (a, b) =>
-      Math.abs(
-        b.pai.teamA.levers[0].value
-      ) -
-      Math.abs(
-        a.pai.teamA.levers[0].value
-      )
+      b.surprise.score -
+      a.surprise.score
   )
   .slice(0, 5)
   .map((m) => ({
     matchup: m.matchup,
     raiEdge: `${m.rai.edge} (+${m.rai.value})`,
-    logicalOutcome: m.surprise.logicalOutcome,
-    score: Math.abs(
-      m.pai.teamA.levers[0].value
-    ),
+    logicalOutcome:
+      m.surprise.logicalOutcome,
+    score: m.surprise.score,
     level:
       m.surprise.level as
         | "MINOR"
@@ -342,10 +339,9 @@ const topSurprises = matches
         | "MAJOR",
   }));
 
-  return {
-    updatedAt:
-      new Date().toISOString(),
-    matches,
-    topSurprises,
-  };
-}
+return {
+  updatedAt:
+    new Date().toISOString(),
+  matches,
+  topSurprises,
+};
