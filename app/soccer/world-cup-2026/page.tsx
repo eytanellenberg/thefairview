@@ -3,24 +3,6 @@ import { computeWorldCup2026AutoSnapshot } from "@/lib/worldCup2026AutoSnapshot"
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function levelBadge(
-  level: "MINOR" | "MODERATE" | "MAJOR" | "NONE"
-) {
-  if (level === "MAJOR") {
-    return "bg-red-100 text-red-800 border-red-200";
-  }
-
-  if (level === "MODERATE") {
-    return "bg-orange-100 text-orange-800 border-orange-200";
-  }
-
-  if (level === "MINOR") {
-    return "bg-yellow-100 text-yellow-800 border-yellow-200";
-  }
-
-  return "bg-gray-100 text-gray-600 border-gray-200";
-}
-
 export default async function WorldCup2026Page() {
   const data = await computeWorldCup2026AutoSnapshot();
 
@@ -124,53 +106,43 @@ const takeaway =
         </div>
       </section>
 
-      {/* TOP SURPRISES */}
+{/* TOP FAIR PERFORMANCES */}
 
-      <section className="mb-8 border rounded-lg p-4 bg-gray-50">
-        <h2 className="text-lg font-semibold mb-3">
-          🔥 Top FAIR Surprises
-        </h2>
+<section className="mb-8 border rounded-lg p-4 bg-gray-50">
+  <h2 className="text-lg font-semibold mb-3">
+    🔥 Top FAIR Performances
+  </h2>
 
-        {data.topSurprises.length === 0 ? (
-          <p className="text-sm text-gray-600">
-            No FAIR surprises detected.
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {data.topSurprises.map((s, i) => (
-              <li
-                key={i}
-                className="border rounded-md bg-white p-3"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-semibold">
-                      {s.matchup}
-                    </div>
+  {data.topSurprises.length === 0 ? (
+    <p className="text-sm text-gray-600">
+      No notable performances detected.
+    </p>
+  ) : (
+    <ul className="space-y-3">
+      {data.topSurprises.map((s, i) => (
+        <li
+          key={i}
+          className="border rounded-md bg-white p-3"
+        >
+          <div>
+            <div className="font-semibold">
+              {s.matchup}
+            </div>
 
-                    <div className="text-sm text-gray-700">
-                      RAI edge: {s.raiEdge}
-                    </div>
+            <div className="text-sm text-gray-700">
+              RAI edge: {s.raiEdge}
+            </div>
 
-                    <div className="text-sm text-gray-700">
-                      Surprise score:{" "}
-                      {s.score.toFixed(2)}
-                    </div>
-                  </div>
-
-                  <span
-                    className={`px-2 py-1 text-xs font-semibold border rounded ${levelBadge(
-                      s.level
-                    )}`}
-                  >
-                    {s.level}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+            <div className="text-sm text-gray-700">
+              Execution score:{" "}
+              {s.score.toFixed(2)}
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )}
+</section>
 
       {/* MATCH DETAILS */}
 
@@ -257,13 +229,6 @@ const takeaway =
                   {m.surprise.score.toFixed(2)}
                 </strong>
 
-                <span
-                  className={`ml-2 inline-block px-2 py-0.5 text-xs font-semibold border rounded ${levelBadge(
-                    m.surprise.level
-                  )}`}
-                >
-                  {m.surprise.level}
-                </span>
               </div>
             </div>
           )}
