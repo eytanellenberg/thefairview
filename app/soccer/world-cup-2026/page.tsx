@@ -106,11 +106,11 @@ const takeaway =
         </div>
       </section>
 
-{/* TOP FAIR PERFORMANCES */}
+{/* TOP FAIR Surprises */}
 
 <section className="mb-8 border rounded-lg p-4 bg-gray-50">
   <h2 className="text-lg font-semibold mb-3">
-    🔥 Top FAIR Performances
+    🔥 Top FAIR Surprises
   </h2>
 
   {data.topSurprises.length === 0 ? (
@@ -134,7 +134,7 @@ const takeaway =
             </div>
 
             <div className="text-sm text-gray-700">
-              Execution score:{" "}
+              Surprise score:{" "}
               {s.score.toFixed(2)}
             </div>
           </div>
