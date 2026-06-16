@@ -270,21 +270,22 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
     games.length
   );
 
-  if (games.length > 0) {
-    const stats =
-      await getSoccerMatchStats(
-        "soccer/fifa.world",
-        games[0].id
-      );
+if (games.length > 0) {
+  const stats =
+    await getSoccerMatchStats(
+      "soccer/fifa.world",
+      games[0].id
+    );
 
-console.log(
-  "MATCH STATS",
-  JSON.stringify(
-    stats,
-    null,
-    2
-  )
-);
+  console.log(
+    "MATCH STATS",
+    JSON.stringify(
+      stats,
+      null,
+      2
+    )
+  );
+}
 
   console.log("DEBUG 6");
 
