@@ -277,10 +277,14 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
         games[0].id
       );
 
-    console.log(
-      JSON.stringify(stats)
-    );
-  }
+console.log(
+  "MATCH STATS",
+  JSON.stringify(
+    stats,
+    null,
+    2
+  )
+);
 
   console.log("DEBUG 6");
 
