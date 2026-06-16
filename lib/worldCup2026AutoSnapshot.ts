@@ -362,60 +362,58 @@ if (games.length > 0) {
 
 const matches = await Promise.all(
   finals.map(async (g): Promise<FAIRMatch> => {
-    finals.map(async (g) => {
+    console.log(
+      "DEBUG MATCH",
+      g.home.name,
+      g.away.name
+    );
 
-      console.log(
-        "DEBUG MATCH",
-        g.home.name,
-        g.away.name
+    const rai = computeRAI(g);
+
+    const stats =
+      await getSoccerMatchStats(
+        "soccer/fifa.world",
+        g.id
       );
 
-      const rai = computeRAI(g);
+    console.log(
+      "MATCH STATS",
+      g.home.name,
+      JSON.stringify(stats)
+    );
 
-      const stats =
-        await getSoccerMatchStats(
-          "soccer/fifa.world",
-          g.id
-        );
+    const pai = computePAI(
+      g,
+      stats
+    );
 
-      console.log(
-        "MATCH STATS",
-        g.home.name,
-        JSON.stringify(stats)
+    const surprise =
+      computeSurprise(
+        g,
+        rai,
+        pai
       );
 
-const pai = computePAI(
-  g,
-  stats
+    return {
+      matchup: `${g.home.name} vs ${g.away.name}`,
+      finalScore: finalScore(g),
+      dateUtc: g.dateUtc,
+
+      rai: {
+        edge: rai.edgeTeam,
+        value: rai.valueAbs,
+        levers: rai.levers,
+      },
+
+      pai: {
+        teamA: pai.home,
+        teamB: pai.away,
+      },
+
+      surprise,
+    };
+  })
 );
-
-      const surprise =
-        computeSurprise(
-          g,
-          rai,
-          pai
-        );
-
-      return {
-        matchup: `${g.home.name} vs ${g.away.name}`,
-        finalScore: finalScore(g),
-        dateUtc: g.dateUtc,
-
-        rai: {
-          edge: rai.edgeTeam,
-          value: rai.valueAbs,
-          levers: rai.levers,
-        },
-
-        pai: {
-          teamA: pai.home,
-          teamB: pai.away,
-        },
-
-        surprise,
-      };
-    })
-  );
 
   console.log(
     "DEBUG 8 MATCHES",
