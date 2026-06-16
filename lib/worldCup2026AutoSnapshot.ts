@@ -259,18 +259,24 @@ const score = rai.valueAbs;
 }
 
 export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026AutoSnapshot> {
-  const games = await getSoccerGames(
-    "soccer/fifa.world"
-  );
-console.log("BEFORE MATCH STATS");
+console.log("DEBUG 1");
+
+const games = await getSoccerGames(
+  "soccer/fifa.world"
+);
+
+console.log(
+  "DEBUG 2",
+  games.length
+);
 
 if (games.length > 0) {
-  try {
-    console.log(
-      "TEST EVENT ID",
-      games[0].id
-    );
+  console.log(
+    "DEBUG 3 EVENT",
+    games[0].id
+  );
 
+  try {
     const stats =
       await getSoccerMatchStats(
         "soccer/fifa.world",
@@ -278,32 +284,23 @@ if (games.length > 0) {
       );
 
     console.log(
-      "MATCH SUMMARY KEYS",
-      Object.keys(stats)
+      "DEBUG 4 TYPE",
+      typeof stats
     );
 
     console.log(
-      "MATCH STATS FETCHED"
+      "DEBUG 5 KEYS",
+      Object.keys(stats)
     );
-  } catch (e) {
+  } catch (err) {
     console.error(
-      "MATCH STATS ERROR",
-      e
+      "DEBUG ERROR",
+      err
     );
   }
 }
 
-console.log("AFTER MATCH STATS");
-
-console.log(
-  "WORLD CUP GAMES",
-  games.map((g) => ({
-    home: g.home.name,
-    away: g.away.name,
-    date: g.dateUtc,
-    status: g.status,
-  }))
-);
+console.log("DEBUG 6");
 
 const last24h =
   Date.now() - 24 * 60 * 60 * 1000;
