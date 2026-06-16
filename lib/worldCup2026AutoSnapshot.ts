@@ -271,33 +271,15 @@ console.log(
 );
 
 if (games.length > 0) {
+  const stats =
+    await getSoccerMatchStats(
+      "soccer/fifa.world",
+      games[0].id
+    );
+
   console.log(
-    "DEBUG 3 EVENT",
-    games[0].id
+    JSON.stringify(stats)
   );
-
-  try {
-    const stats =
-      await getSoccerMatchStats(
-        "soccer/fifa.world",
-        games[0].id
-      );
-
-    console.log(
-      "DEBUG 4 TYPE",
-      typeof stats
-    );
-
-    console.log(
-      "DEBUG 5 KEYS",
-      Object.keys(stats)
-    );
-  } catch (err) {
-    console.error(
-      "DEBUG ERROR",
-      err
-    );
-  }
 }
 
 console.log("DEBUG 6");
