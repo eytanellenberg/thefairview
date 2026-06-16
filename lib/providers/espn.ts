@@ -114,28 +114,36 @@ export async function getNFLGames(): Promise<NormalizedGame[]> {
 
 /* ================= SOCCER ================= */
 
-export async function getSoccerGames(
-  league: string
-): Promise<NormalizedGame[]> {
-  const all: NormalizedGame[] = [];
+export async function getSoccerMatchStats(
+  league: string,
+  eventId: string
+) {
+  const url =
+    `https://site.api.espn.com/apis/site/v2/sports/${league}/summary?event=${eventId}`;
 
-  for (let i = 0; i < 14; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
+  console.log("ESPN URL", url);
 
-    const json = await fetchScoreboard(
-      league,
-      yyyymmdd(d)
-    );
+  const res = await fetch(url, {
+    cache: "no-store",
+  });
 
-    const games = (json.events || [])
-      .map(normalize)
-      .filter(Boolean) as NormalizedGame[];
+  console.log(
+    "ESPN STATUS",
+    res.status
+  );
 
-    all.push(...games);
+  const text = await res.text();
+
+  console.log(
+    "ESPN RAW",
+    text.slice(0, 2000)
+  );
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
   }
-
-  return all;
 }
 
 /* ================= MATCH SUMMARY / STATS ================= */
