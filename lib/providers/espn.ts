@@ -115,16 +115,18 @@ export async function getNFLGames(): Promise<NormalizedGame[]> {
 /* ================= SOCCER ================= */
 
 export async function getSoccerGames(
-  league: string = "soccer/fra.1"
+  league: string
 ): Promise<NormalizedGame[]> {
   const all: NormalizedGame[] = [];
 
-  // Remonte jusqu'à 14 jours de matchs
   for (let i = 0; i < 14; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
 
-    const json = await fetchScoreboard(league, yyyymmdd(d));
+    const json = await fetchScoreboard(
+      league,
+      yyyymmdd(d)
+    );
 
     const games = (json.events || [])
       .map(normalize)
@@ -134,4 +136,33 @@ export async function getSoccerGames(
   }
 
   return all;
+}
+
+/* ================= MATCH SUMMARY / STATS ================= */
+
+export async function getSoccerMatchStats(
+  league: string,
+  eventId: string
+) {
+  const url =
+    `https://site.api.espn.com/apis/site/v2/sports/${league}/summary?event=${eventId}`;
+
+  const res = await fetch(url, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      `ESPN summary fetch failed (${eventId})`
+    );
+  }
+
+  const json = await res.json();
+
+  console.log(
+    `MATCH SUMMARY ${eventId}`,
+    JSON.stringify(json, null, 2)
+  );
+
+  return json;
 }
