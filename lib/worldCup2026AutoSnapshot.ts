@@ -263,27 +263,48 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
     "soccer/fifa.world"
   );
 
-  if (games.length > 0) {
+console.log("BEFORE MATCH STATS");
+
+if (games.length > 0) {
+  try {
     console.log(
       "TEST EVENT ID",
       games[0].id
     );
 
-    await getSoccerMatchStats(
-      "soccer/fifa.world",
-      games[0].id
+    const stats =
+      await getSoccerMatchStats(
+        "soccer/fifa.world",
+        games[0].id
+      );
+
+    console.log(
+      "MATCH SUMMARY KEYS",
+      Object.keys(stats)
+    );
+
+    console.log(
+      "MATCH STATS FETCHED"
+    );
+  } catch (e) {
+    console.error(
+      "MATCH STATS ERROR",
+      e
     );
   }
+}
 
-  console.log(
-    "WORLD CUP GAMES",
-    games.map((g) => ({
-      home: g.home.name,
-      away: g.away.name,
-      date: g.dateUtc,
-      status: g.status,
-    }))
-  );
+console.log("AFTER MATCH STATS");
+
+console.log(
+  "WORLD CUP GAMES",
+  games.map((g) => ({
+    home: g.home.name,
+    away: g.away.name,
+    date: g.dateUtc,
+    status: g.status,
+  }))
+);
 
 const last24h =
   Date.now() - 24 * 60 * 60 * 1000;
