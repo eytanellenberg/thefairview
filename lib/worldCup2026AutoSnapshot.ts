@@ -165,73 +165,107 @@ function computePAI(
     };
   }
 
-  const possessionEdge =
-    r2(
-      (stat(home, "possessionPct") -
-        stat(away, "possessionPct")) /
-      10
-    );
+const possessionEdge =
+  r2(
+    (stat(home,"possessionPct") -
+     stat(away,"possessionPct")) / 10
+  );
 
-  const shotsEdge =
-    r2(
-      (stat(home, "shotsOnTarget") -
-        stat(away, "shotsOnTarget")) /
-      2
-    );
+const shotEdge =
+  r2(
+    (stat(home,"totalShots") -
+     stat(away,"totalShots")) / 4
+  );
+
+const targetEdge =
+  r2(
+    (stat(home,"shotsOnTarget") -
+     stat(away,"shotsOnTarget")) / 2
+  );
 
 const passEdge =
   r2(
-    (stat(home, "passPct") -
-      stat(away, "passPct")) / 10
+    (stat(home,"passPct") -
+     stat(away,"passPct")) * 10
+  );
+
+const defenseEdge =
+  r2(
+    (
+      stat(home,"effectiveTackles") +
+      stat(home,"interceptions")
+    -
+      stat(away,"effectiveTackles") -
+      stat(away,"interceptions")
+    ) / 5
   );
 
   return {
-    home: {
-      name: g.home.name,
+  home: {
+    name: g.home.name,
 
-      levers: [
-        {
-          label: "Possession control",
-          value: possessionEdge,
-        },
-        {
-          label: "Shot quality",
-          value: shotsEdge,
-        },
-        {
-          label: "Passing efficiency",
-          value: passEdge,
-        },
-      ],
-    },
+    levers: [
+      {
+        label: "Possession control",
+        value: possessionEdge,
+      },
+      {
+        label: "Shot generation",
+        value: shotEdge,
+      },
+      {
+        label: "Shot accuracy",
+        value: targetEdge,
+      },
+      {
+        label: "Passing efficiency",
+        value: passEdge,
+      },
+      {
+        label: "Defensive pressure",
+        value: defenseEdge,
+      },
+    ],
+  },
 
-    away: {
-      name: g.away.name,
+  away: {
+    name: g.away.name,
 
-      levers: [
-        {
-          label: "Possession control",
-          value: -possessionEdge,
-        },
-        {
-          label: "Shot quality",
-          value: -shotsEdge,
-        },
-        {
-          label: "Passing efficiency",
-          value: -passEdge,
-        },
-      ],
-    },
+    levers: [
+      {
+        label: "Possession control",
+        value: -possessionEdge,
+      },
+      {
+        label: "Shot generation",
+        value: -shotEdge,
+      },
+      {
+        label: "Shot accuracy",
+        value: -targetEdge,
+      },
+      {
+        label: "Passing efficiency",
+        value: -passEdge,
+      },
+      {
+        label: "Defensive pressure",
+        value: -defenseEdge,
+      },
+    ],
+  },
 
-    intensityAbs:
-      (
-        Math.abs(possessionEdge) +
-        Math.abs(shotsEdge) +
-        Math.abs(passEdge)
-      ) / 3,
-  };
+  intensityAbs:
+    (
+      Math.abs(possessionEdge) +
+      Math.abs(shotEdge) +
+      Math.abs(targetEdge) +
+      Math.abs(passEdge) +
+      Math.abs(defenseEdge)
+    ) / 5,
+};
 }
+  
 
 /* ================= SURPRISE ================= */
 
