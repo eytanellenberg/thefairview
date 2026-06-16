@@ -115,30 +115,18 @@ function computeRAI(g: NormalizedGame) {
   const favoredEdge =
     Math.abs(rankingEdge);
 
-  return {
-    edgeTeam,
-    valueAbs: favoredEdge,
+return {
+  edgeTeam,
+  valueAbs: favoredEdge,
 
-levers: [
- {
-   label: "FIFA ranking",
-   value: rankingEdge
- },
- {
-   label: "Recent form",
-   value: formEdge
- },
- {
-   label: "Attack strength",
-   value: attackEdge
- },
- {
-   label: "Defensive stability",
-   value: defenseEdge
- }
-]
-  };
-}
+  levers: [
+    {
+      label: "FIFA ranking differential",
+      value: favoredEdge,
+    },
+  ],
+};
+} 
 /* ================= PAI ================= */
 
 function stat(
