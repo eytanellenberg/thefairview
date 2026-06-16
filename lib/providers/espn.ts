@@ -114,6 +114,18 @@ export async function getNFLGames(): Promise<NormalizedGame[]> {
 
 /* ================= SOCCER ================= */
 
+export async function getSoccerGames(
+  league: string
+): Promise<NormalizedGame[]> {
+  const json = await fetchScoreboard(
+    league
+  );
+
+  return (json.events || [])
+    .map(normalize)
+    .filter(Boolean) as NormalizedGame[];
+}
+
 export async function getSoccerMatchStats(
   league: string,
   eventId: string
@@ -145,4 +157,3 @@ export async function getSoccerMatchStats(
     return { raw: text };
   }
 }
-
