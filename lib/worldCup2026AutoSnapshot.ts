@@ -281,7 +281,6 @@ if (games.length > 0) {
     JSON.stringify(stats)
   );
 }
-
 console.log("DEBUG 6");
 
 const last24h =
@@ -298,18 +297,46 @@ const finals = games
       new Date(b.dateUtc).getTime() -
       new Date(a.dateUtc).getTime()
   );
-  const matches: FAIRMatch[] =
-    finals.map((g) => {
-      const rai = computeRAI(g);
-      const pai = computePAI(g);
-      const surprise =
-        computeSurprise(
-          g,
-          rai,
-          pai
-        );
 
-      return {
+console.log(
+  "DEBUG 7 FINALS",
+  finals.length
+);
+
+const matches: FAIRMatch[] =
+  finals.map((g) => {
+
+    console.log(
+      "DEBUG MATCH",
+      g.home.name,
+      g.away.name
+    );
+
+    const rai = computeRAI(g);
+
+    console.log(
+      "DEBUG RAI",
+      JSON.stringify(rai)
+    );
+
+    const pai = computePAI(g);
+
+    console.log(
+      "DEBUG PAI OK"
+    );
+
+    const surprise =
+      computeSurprise(
+        g,
+        rai,
+        pai
+      );
+
+    console.log(
+      "DEBUG SURPRISE OK"
+    );
+
+    return {
         matchup: `${g.home.name} vs ${g.away.name}`,
         finalScore: finalScore(g),
         dateUtc: g.dateUtc,
