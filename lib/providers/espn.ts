@@ -146,31 +146,3 @@ export async function getSoccerMatchStats(
   }
 }
 
-/* ================= MATCH SUMMARY / STATS ================= */
-
-export async function getSoccerMatchStats(
-  league: string,
-  eventId: string
-) {
-  const url =
-    `https://site.api.espn.com/apis/site/v2/sports/${league}/summary?event=${eventId}`;
-
-  const res = await fetch(url, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error(
-      `ESPN summary fetch failed (${eventId})`
-    );
-  }
-
-  const json = await res.json();
-
-  console.log(
-    `MATCH SUMMARY ${eventId}`,
-    JSON.stringify(json, null, 2)
-  );
-
-  return json;
-}
