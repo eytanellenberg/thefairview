@@ -262,7 +262,6 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
   const games = await getSoccerGames(
     "soccer/fifa.world"
   );
-throw new Error("WORLD CUP DEBUG");
 console.log("BEFORE MATCH STATS");
 
 if (games.length > 0) {
