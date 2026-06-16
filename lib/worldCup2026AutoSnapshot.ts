@@ -309,8 +309,9 @@ if (games.length > 0) {
     finals.length
   );
 
-  const matches: FAIRMatch[] =
-    finals.map((g) => {
+const matches: FAIRMatch[] =
+  await Promise.all(
+    finals.map(async (g) => {
 
       console.log(
         "DEBUG MATCH",
@@ -320,16 +321,20 @@ if (games.length > 0) {
 
       const rai = computeRAI(g);
 
+      const stats =
+        await getSoccerMatchStats(
+          "soccer/fifa.world",
+          g.id
+        );
+
       console.log(
-        "DEBUG RAI",
-        JSON.stringify(rai)
+        "MATCH STATS",
+        g.home.name,
+        JSON.stringify(stats)
       );
 
-      const pai = computePAI(g);
-
-      console.log(
-        "DEBUG PAI OK"
-      );
+      const pai =
+        computePAI(g); // temporaire
 
       const surprise =
         computeSurprise(
@@ -337,10 +342,6 @@ if (games.length > 0) {
           rai,
           pai
         );
-
-      console.log(
-        "DEBUG SURPRISE OK"
-      );
 
       return {
         matchup: `${g.home.name} vs ${g.away.name}`,
@@ -360,7 +361,8 @@ if (games.length > 0) {
 
         surprise,
       };
-    });
+    })
+  );
 
   console.log(
     "DEBUG 8 MATCHES",
