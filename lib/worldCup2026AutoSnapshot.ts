@@ -119,12 +119,24 @@ function computeRAI(g: NormalizedGame) {
     edgeTeam,
     valueAbs: favoredEdge,
 
-    levers: [
-      {
-        label: "FIFA ranking differential",
-        value: favoredEdge,
-      },
-    ],
+levers: [
+ {
+   label: "FIFA ranking",
+   value: rankingEdge
+ },
+ {
+   label: "Recent form",
+   value: formEdge
+ },
+ {
+   label: "Attack strength",
+   value: attackEdge
+ },
+ {
+   label: "Defensive stability",
+   value: defenseEdge
+ }
+]
   };
 }
 /* ================= PAI ================= */
