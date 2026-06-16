@@ -1,4 +1,8 @@
-import { getSoccerGames, NormalizedGame } from "@/lib/providers/espn";
+import {
+  getSoccerGames,
+  getSoccerMatchStats,
+  NormalizedGame,
+} from "@/lib/providers/espn";
 import { FIFA_RANKINGS } from "@/lib/data/fifaRankings";
 
 /* ================= TYPES ================= */
@@ -258,6 +262,18 @@ export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026Aut
   const games = await getSoccerGames(
     "soccer/fifa.world"
   );
+
+  if (games.length > 0) {
+    console.log(
+      "TEST EVENT ID",
+      games[0].id
+    );
+
+    await getSoccerMatchStats(
+      "soccer/fifa.world",
+      games[0].id
+    );
+  }
 
   console.log(
     "WORLD CUP GAMES",
