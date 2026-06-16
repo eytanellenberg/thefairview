@@ -4,9 +4,17 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function WorldCup2026Page() {
-  const data = await computeWorldCup2026AutoSnapshot();
 
-  const totalGames = data.matches.length;
+  const data =
+    await computeWorldCup2026AutoSnapshot();
+
+  console.log(
+    "PAGE DATA",
+    JSON.stringify(data, null, 2)
+  );
+
+  const totalGames =
+    data.matches.length;
 
   const upsets = data.matches.filter(
     (m) =>
