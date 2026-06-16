@@ -25,6 +25,11 @@ export type FAIRTeamPAI = {
   name: string;
   levers: FAIRLever[];
 };
+export type FAIRPAI = {
+  home: FAIRTeamPAI;
+  away: FAIRTeamPAI;
+  intensityAbs: number;
+};
 
 export type FAIRMatch = {
   matchup: string;
@@ -124,61 +129,107 @@ function computeRAI(g: NormalizedGame) {
 }
 /* ================= PAI ================= */
 
-function computePAI(g: NormalizedGame) {
-  const ms = clamp(
-    margin(g) / 8,
-    -3,
-    3
+function stat(
+  team: any,
+  name: string
+): number {
+  const s = team.statistics?.find(
+    (x: any) => x.name === name
   );
 
-  const off = r2(ms);
-  const shot = r2(ms * 0.7);
-  const def = r2(ms * 0.85);
+  return Number(
+    s?.displayValue ?? 0
+  );
+}
+function computePAI(
+  g: NormalizedGame,
+  stats: any
+): FAIRPAI {
+  const home =
+    stats?.boxscore?.teams?.[0];
+
+  const away =
+    stats?.boxscore?.teams?.[1];
+
+  if (!home || !away) {
+    return {
+      home: {
+        name: g.home.name,
+        levers: [],
+      },
+      away: {
+        name: g.away.name,
+        levers: [],
+      },
+      intensityAbs: 0,
+    };
+  }
+
+  const possessionEdge =
+    r2(
+      (stat(home, "possessionPct") -
+        stat(away, "possessionPct")) /
+      10
+    );
+
+  const shotsEdge =
+    r2(
+      (stat(home, "shotsOnTarget") -
+        stat(away, "shotsOnTarget")) /
+      2
+    );
+
+const passEdge =
+  r2(
+    (stat(home, "passPct") -
+      stat(away, "passPct")) / 10
+  );
 
   return {
     home: {
       name: g.home.name,
+
       levers: [
         {
-          label: "Offensive execution",
-          value: off,
+          label: "Possession control",
+          value: possessionEdge,
         },
         {
-          label: "Shot conversion",
-          value: shot,
+          label: "Shot quality",
+          value: shotsEdge,
         },
         {
-          label: "Defensive resistance",
-          value: def,
+          label: "Passing efficiency",
+          value: passEdge,
         },
       ],
     },
 
     away: {
       name: g.away.name,
+
       levers: [
         {
-          label: "Offensive execution",
-          value: -off,
+          label: "Possession control",
+          value: -possessionEdge,
         },
         {
-          label: "Shot conversion",
-          value: -shot,
+          label: "Shot quality",
+          value: -shotsEdge,
         },
         {
-          label: "Defensive resistance",
-          value: -def,
+          label: "Passing efficiency",
+          value: -passEdge,
         },
       ],
     },
 
-    intensityAbs: r2(
+    intensityAbs:
       (
-        Math.abs(off) +
-        Math.abs(shot) +
-        Math.abs(def)
-      ) / 3
-    ),
+        Math.abs(possessionEdge) +
+        Math.abs(shotsEdge) +
+        Math.abs(passEdge)
+      ) / 3,
   };
 }
 
@@ -195,7 +246,7 @@ function level(
 function computeSurprise(
   g: NormalizedGame,
   rai: ReturnType<typeof computeRAI>,
-  pai: ReturnType<typeof computePAI>
+  pai: FAIRPAI
 ): FAIRSurprise {
 const w = winner(g);
 
@@ -309,8 +360,8 @@ if (games.length > 0) {
     finals.length
   );
 
-const matches: FAIRMatch[] =
-  await Promise.all(
+const matches = await Promise.all(
+  finals.map(async (g): Promise<FAIRMatch> => {
     finals.map(async (g) => {
 
       console.log(
@@ -333,8 +384,10 @@ const matches: FAIRMatch[] =
         JSON.stringify(stats)
       );
 
-      const pai =
-        computePAI(g); // temporaire
+const pai = computePAI(
+  g,
+  stats
+);
 
       const surprise =
         computeSurprise(
