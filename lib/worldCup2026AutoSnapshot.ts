@@ -259,84 +259,85 @@ const score = rai.valueAbs;
 }
 
 export async function computeWorldCup2026AutoSnapshot(): Promise<WorldCup2026AutoSnapshot> {
-console.log("DEBUG 1");
+  console.log("DEBUG 1");
 
-const games = await getSoccerGames(
-  "soccer/fifa.world"
-);
-
-console.log(
-  "DEBUG 2",
-  games.length
-);
-
-if (games.length > 0) {
-  const stats =
-    await getSoccerMatchStats(
-      "soccer/fifa.world",
-      games[0].id
-    );
+  const games = await getSoccerGames(
+    "soccer/fifa.world"
+  );
 
   console.log(
-    JSON.stringify(stats)
-  );
-}
-console.log("DEBUG 6");
-
-const last24h =
-  Date.now() - 24 * 60 * 60 * 1000;
-
-const finals = games
-  .filter(
-    (g) =>
-      g.status === "FINAL" &&
-      new Date(g.dateUtc).getTime() >= last24h
-  )
-  .sort(
-    (a, b) =>
-      new Date(b.dateUtc).getTime() -
-      new Date(a.dateUtc).getTime()
+    "DEBUG 2",
+    games.length
   );
 
-console.log(
-  "DEBUG 7 FINALS",
-  finals.length
-);
-
-const matches: FAIRMatch[] =
-  finals.map((g) => {
-
-    console.log(
-      "DEBUG MATCH",
-      g.home.name,
-      g.away.name
-    );
-
-    const rai = computeRAI(g);
-
-    console.log(
-      "DEBUG RAI",
-      JSON.stringify(rai)
-    );
-
-    const pai = computePAI(g);
-
-    console.log(
-      "DEBUG PAI OK"
-    );
-
-    const surprise =
-      computeSurprise(
-        g,
-        rai,
-        pai
+  if (games.length > 0) {
+    const stats =
+      await getSoccerMatchStats(
+        "soccer/fifa.world",
+        games[0].id
       );
 
     console.log(
-      "DEBUG SURPRISE OK"
+      JSON.stringify(stats)
+    );
+  }
+
+  console.log("DEBUG 6");
+
+  const last24h =
+    Date.now() - 24 * 60 * 60 * 1000;
+
+  const finals = games
+    .filter(
+      (g) =>
+        g.status === "FINAL" &&
+        new Date(g.dateUtc).getTime() >= last24h
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.dateUtc).getTime() -
+        new Date(a.dateUtc).getTime()
     );
 
-    return {
+  console.log(
+    "DEBUG 7 FINALS",
+    finals.length
+  );
+
+  const matches: FAIRMatch[] =
+    finals.map((g) => {
+
+      console.log(
+        "DEBUG MATCH",
+        g.home.name,
+        g.away.name
+      );
+
+      const rai = computeRAI(g);
+
+      console.log(
+        "DEBUG RAI",
+        JSON.stringify(rai)
+      );
+
+      const pai = computePAI(g);
+
+      console.log(
+        "DEBUG PAI OK"
+      );
+
+      const surprise =
+        computeSurprise(
+          g,
+          rai,
+          pai
+        );
+
+      console.log(
+        "DEBUG SURPRISE OK"
+      );
+
+      return {
         matchup: `${g.home.name} vs ${g.away.name}`,
         finalScore: finalScore(g),
         dateUtc: g.dateUtc,
@@ -356,35 +357,54 @@ const matches: FAIRMatch[] =
       };
     });
 
-const topSurprises = matches
-  .filter(
-    (m) =>
-      m.surprise.isSurprise &&
-      m.surprise.score >= 1
-  )
-  .sort(
-    (a, b) =>
-      b.surprise.score -
-      a.surprise.score
-  )
-  .slice(0, 5)
-  .map((m) => ({
-    matchup: m.matchup,
-    raiEdge: `${m.rai.edge} (+${m.rai.value})`,
-    logicalOutcome:
-      m.surprise.logicalOutcome,
-    score: m.surprise.score,
-    level:
-      m.surprise.level as
-        | "MINOR"
-        | "MODERATE"
-        | "MAJOR",
-  }));
+  console.log(
+    "DEBUG 8 MATCHES",
+    matches.length
+  );
 
-return {
-  updatedAt:
-    new Date().toISOString(),
-  matches,
-  topSurprises,
-};
+  console.log(
+    "DEBUG 9 FIRST MATCH",
+    JSON.stringify(matches[0], null, 2)
+  );
+
+  const topSurprises = matches
+    .filter(
+      (m) =>
+        m.surprise.isSurprise &&
+        m.surprise.score >= 1
+    )
+    .sort(
+      (a, b) =>
+        b.surprise.score -
+        a.surprise.score
+    )
+    .slice(0, 5)
+    .map((m) => ({
+      matchup: m.matchup,
+      raiEdge: `${m.rai.edge} (+${m.rai.value})`,
+      logicalOutcome:
+        m.surprise.logicalOutcome,
+      score: m.surprise.score,
+      level:
+        m.surprise.level as
+          | "MINOR"
+          | "MODERATE"
+          | "MAJOR",
+    }));
+
+  console.log(
+    "DEBUG 10 TOP SURPRISES",
+    topSurprises.length
+  );
+
+  console.log(
+    "DEBUG 11 RETURN"
+  );
+
+  return {
+    updatedAt:
+      new Date().toISOString(),
+    matches,
+    topSurprises,
+  };
 }
